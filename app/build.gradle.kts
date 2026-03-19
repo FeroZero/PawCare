@@ -10,11 +10,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.josmeyly_duarte_ap2_p2"
+    namespace = "com.example.pawcare"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.josmeyly_duarte_ap2_p2"
+        applicationId = "com.example.pawcare"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
