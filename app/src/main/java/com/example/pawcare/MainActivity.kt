@@ -50,7 +50,7 @@ fun ThemeTestScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Antillas AquaDex Theme",
+            text = "PawCareTheme",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
