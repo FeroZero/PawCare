@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <style name="Theme.PawCare" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.PawCare.Starter" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F5EFE6</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.PawCare</item>
+    </style>
 </resources>
