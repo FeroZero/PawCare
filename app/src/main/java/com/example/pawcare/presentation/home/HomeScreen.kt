@@ -236,20 +236,6 @@ fun QuickActionsGrid(onActionClick: (QuickAction) -> Unit) {
                 onClick = { onActionClick(QuickAction.REGISTER_PET) }
             )
             QuickActionButton(
-                icon = Icons.Default.CalendarToday,
-                label = "Agendar Cita",
-                modifier = Modifier.weight(1f),
-                onClick = { onActionClick(QuickAction.SCHEDULE_APPOINTMENT) }
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            QuickActionButton(
-                icon = Icons.Default.Pets,
-                label = "Mascotas",
-                modifier = Modifier.weight(1f),
-                onClick = { onActionClick(QuickAction.PET_LIST) }
-            )
-            QuickActionButton(
                 icon = Icons.Default.AttachMoney,
                 label = "Cobrar",
                 modifier = Modifier.weight(1f),
