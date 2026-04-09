@@ -53,13 +53,13 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5EFE6)) // Background color from design
+                .background(Color(0xFFF5EFE6))
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Header
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -97,7 +97,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Summary Card
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -136,7 +136,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Appointments List (Simple vertical list)
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
