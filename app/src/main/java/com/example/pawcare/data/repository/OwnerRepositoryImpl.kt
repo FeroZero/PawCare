@@ -12,9 +12,10 @@ import com.example.pawcare.domain.model.Owner
 import com.example.pawcare.domain.model.Pet
 import com.example.pawcare.domain.repository.OwnerRepository
 import com.example.pawcare.domain.util.Resource
-import com.example.pawcare.domain.util.networkBoundResource
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import com.example.pawcare.domain.util.onFailureSuspend
+import com.example.pawcare.domain.util.onSuccessSuspend
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 
 class OwnerRepositoryImpl @Inject constructor(
@@ -23,29 +24,65 @@ class OwnerRepositoryImpl @Inject constructor(
     private val petDao: PetDao
 ) : OwnerRepository, SafeApiCall {
 
-    override fun getOwners(): Flow<Resource<List<Owner>>> = networkBoundResource(
-        query = { ownerDao.getAllOwners().map { entities -> entities.map { it.toOwner() } } },
-        fetch = { api.searchPets("").body()?.mapNotNull { it.owner }?.distinctBy { it.id } ?: emptyList() },
-        saveFetchResult = { dtos ->
-            ownerDao.upsertOwners(dtos.map { it.toEntity() })
-        }
-    )
+    override fun getOwners(): Flow<Resource<List<Owner>>> = flow {
+        emit(Resource.Loading())
 
-    override fun getOwnerById(id: String): Flow<Resource<Owner>> = networkBoundResource(
-        query = { ownerDao.getOwnerById(id).map { it?.toOwner() ?: Owner("", "", "", "", "", false, "") } },
-        fetch = { api.getOwnerById(id).body()!! },
-        saveFetchResult = { dto ->
+        val result = safeApiCall { api.searchPets("") }
+
+        result.onSuccessSuspend { petDtos ->
+            val ownerDtos = petDtos.mapNotNull { it.owner }.distinctBy { it.id }
+            ownerDao.upsertOwners(ownerDtos.map { it.toEntity() })
+        }.onFailureSuspend { errorMessage ->
+            emit(Resource.Error(errorMessage))
+        }
+
+        emitAll(
+            ownerDao.getAllOwners().map { entities ->
+                Resource.Success(entities.map { it.toOwner() })
+            }
+        )
+    }.flowOn(Dispatchers.IO)
+
+    override fun getOwnerById(id: String): Flow<Resource<Owner>> = flow {
+        emit(Resource.Loading())
+
+        val result = safeApiCall { api.getOwnerById(id) }
+
+        result.onSuccessSuspend { dto ->
             ownerDao.upsertOwners(listOf(dto.toEntity()))
+        }.onFailureSuspend { errorMessage ->
+            emit(Resource.Error(errorMessage))
         }
-    )
 
-    override fun getOwnerPets(ownerId: String): Flow<Resource<List<Pet>>> = networkBoundResource(
-        query = { petDao.getAllPets().map { pets -> pets.filter { it.ownerId == ownerId }.map { it.toPet() } } },
-        fetch = { api.getOwnerPets(ownerId).body() ?: emptyList() },
-        saveFetchResult = { dtos ->
+        emitAll(
+            ownerDao.getOwnerById(id).map { entity ->
+                if (entity != null) {
+                    Resource.Success(entity.toOwner())
+                } else {
+                    Resource.Error("Dueño no encontrado")
+                }
+            }
+        )
+    }.flowOn(Dispatchers.IO)
+
+    override fun getOwnerPets(ownerId: String): Flow<Resource<List<Pet>>> = flow {
+        emit(Resource.Loading())
+
+        val result = safeApiCall { api.getOwnerPets(ownerId) }
+
+        result.onSuccessSuspend { dtos ->
             petDao.upsertPets(dtos.map { it.toEntity() })
+        }.onFailureSuspend { errorMessage ->
+            emit(Resource.Error(errorMessage))
         }
-    )
+
+        emitAll(
+            petDao.getAllPets().map { entities ->
+                val filtered = entities.filter { it.ownerId == ownerId }.map { it.toPet() }
+                Resource.Success(filtered)
+            }
+        )
+    }.flowOn(Dispatchers.IO)
 
     override suspend fun createOwner(
         fullName: String,
@@ -57,6 +94,7 @@ class OwnerRepositoryImpl @Inject constructor(
         val result = safeApiCall {
             api.createOwner(CreateOwnerRequest(fullName, phone, email, address, isVip))
         }
+
         return when (result) {
             is Resource.Success -> {
                 ownerDao.upsertOwners(listOf(result.data.toEntity()))
