@@ -42,6 +42,12 @@ interface PawCareApiService {
         @Query("status") status: String?
     ): Response<List<AppointmentDto>>
 
+    @GET("appointments/{id}")
+    suspend fun getAppointmentById(@Path("id") id: String): Response<AppointmentDto>
+
+    @DELETE("appointments/{id}")
+    suspend fun deleteAppointment(@Path("id") id: String): Response<Unit>
+
     @PATCH("appointments/{id}/status")
     suspend fun updateAppointmentStatus(
         @Path("id") id: String,
