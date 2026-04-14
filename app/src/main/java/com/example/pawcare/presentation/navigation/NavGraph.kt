@@ -134,8 +134,7 @@ fun NavGraph(
             InventoryListScreen(
                 state = state,
                 onEvent = viewModel::onEvent,
-                onNavigateToCreate = { navController.navigate("product_form") },
-                onNavigateToEdit = {
+                onNavigateToForm = {
                     navController.navigate("product_form")
                 }
             )
@@ -150,7 +149,7 @@ fun NavGraph(
                 state = state,
                 onEvent = viewModel::onEvent,
                 onBack = { navController.popBackStack() },
-                isEdit = state.name.isNotEmpty() // O una lógica basada en un ID
+                isEdit = state.name.isNotEmpty()
             )
         }
     }

@@ -10,7 +10,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,24 +23,49 @@ import com.example.pawcare.domain.model.Product
 import com.example.pawcare.presentation.components.products.ProductUiEvent
 import com.example.pawcare.presentation.components.products.ProductUiState
 import com.example.pawcare.presentation.screens.pet.PawCareCard
-import com.example.pawcare.ui.theme.Accent
-import com.example.pawcare.ui.theme.Background
-import com.example.pawcare.ui.theme.Gold
-import com.example.pawcare.ui.theme.MutedText
-import com.example.pawcare.ui.theme.PawCareTheme
-import com.example.pawcare.ui.theme.TextPrimary
+import com.example.pawcare.ui.theme.*
 
 @Composable
 fun InventoryListScreen(
     state: ProductUiState,
     onEvent: (ProductUiEvent) -> Unit,
-    onNavigateToCreate: () -> Unit,
-    onNavigateToEdit: (String) -> Unit
+    onNavigateToForm: () -> Unit
 ) {
+    var productToDelete by remember { mutableStateOf<Product?>(null) }
+
+    if (productToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { productToDelete = null },
+            title = { Text("¿Eliminar producto?", fontWeight = FontWeight.Bold) },
+            text = { Text("Esta acción no se puede deshacer. ¿Estás seguro de que quieres eliminar '${productToDelete?.name}'?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        productToDelete?.let { onEvent(ProductUiEvent.OnDeleteProduct(it.id)) }
+                        productToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { productToDelete = null }) {
+                    Text("Cancelar")
+                }
+            },
+            containerColor = Surface,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onNavigateToCreate,
+                onClick = {
+                    onEvent(ProductUiEvent.OnClearForm) // Limpiamos el formulario para nuevo producto
+                    onNavigateToForm()
+                },
                 containerColor = Accent,
                 contentColor = Color.White
             ) {
@@ -77,8 +104,13 @@ fun InventoryListScreen(
                 items(state.products) { product ->
                     InventoryItem(
                         product = product,
-                        onEdit = { onNavigateToEdit(product.id) },
-                        onDelete = { onEvent(ProductUiEvent.OnDeleteProduct(product.id)) }
+                        onEdit = {
+                            onEvent(ProductUiEvent.OnEditProductClick(product))
+                            onNavigateToForm()
+                        },
+                        onDelete = {
+                            productToDelete = product
+                        }
                     )
                 }
             }
@@ -138,7 +170,7 @@ private fun InventoryListScreenPreview() {
         )
 
         val state = ProductUiState(
-             products = mockProducts,
+            products = mockProducts,
             isLoading = false,
             searchQuery = ""
         )
@@ -146,8 +178,7 @@ private fun InventoryListScreenPreview() {
         InventoryListScreen(
             state = state,
             onEvent = {},
-            onNavigateToCreate = {},
-            onNavigateToEdit = {id ->}
+            onNavigateToForm = {}
         )
     }
 }

@@ -45,6 +45,17 @@ class ProductViewModel @Inject constructor(
                     error = null
                 ) }
             }
+            is ProductUiEvent.OnClearForm -> {
+                _state.update { it.copy(
+                    name = "",
+                    price = "",
+                    category = "",
+                    stock = "",
+                    imageUrl = null,
+                    saveSuccess = false,
+                    error = null
+                ) }
+            }
 
             is ProductUiEvent.OnDeleteProduct -> {
                 deleteProduct(event.id)
@@ -90,6 +101,7 @@ class ProductViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun loadProducts(category: String? = null) {
         getProductsUseCase(category).onEach { result ->

@@ -61,7 +61,7 @@ object AppModule {
     @Singleton
     fun provideApiService(client: OkHttpClient): PawCareApiService {
         return Retrofit.Builder()
-            .baseUrl("https://pawwcareapi-fje8h9d4eabsekf2.canadacentral-01.azurewebsites.net/api/v1/")
+            .baseUrl("https://pawcareapi-production.up.railway.app/api/v1/")
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
