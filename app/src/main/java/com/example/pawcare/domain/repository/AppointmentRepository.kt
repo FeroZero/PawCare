@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface AppointmentRepository {
     fun getAppointments(date: String?, status: String?): Flow<Resource<List<Appointment>>>
+    suspend fun getAppointmentById(id: String): Resource<Appointment>
     suspend fun createAppointment(
         date: String,
         timeSlot: String,
@@ -14,6 +15,5 @@ interface AppointmentRepository {
         notes: String?
     ): Resource<Appointment>
     suspend fun updateAppointmentStatus(id: String, status: String, paymentMethod: String?): Resource<Appointment>
-
     suspend fun deleteAppointment(id: String): Resource<Unit>
 }

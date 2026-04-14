@@ -34,6 +34,15 @@ class AppointmentRepositoryImpl @Inject constructor(
         }
     )
 
+    override suspend fun getAppointmentById(id: String): Resource<Appointment> {
+        val result = safeApiCall { api.getAppointmentById(id) }
+        return when (result) {
+            is Resource.Success -> Resource.Success(result.data.toAppointment())
+            is Resource.Error -> Resource.Error(result.message)
+            is Resource.Loading -> Resource.Loading()
+        }
+    }
+
     override suspend fun createAppointment(
         date: String,
         timeSlot: String,
