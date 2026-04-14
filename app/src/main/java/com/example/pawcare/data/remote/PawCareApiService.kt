@@ -52,6 +52,9 @@ interface PawCareApiService {
     @POST("appointments")
     suspend fun createAppointment(@Body request: CreateAppointmentRequest): Response<AppointmentDto>
 
+    @GET("appointments/{id}")
+    suspend fun getAppointmentById(@Path("id") id: String): Response<AppointmentDto>
+
     @GET("appointments")
     suspend fun getAppointments(
         @Query("date") date: String?,
