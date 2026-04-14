@@ -10,4 +10,6 @@ interface PetRepository {
     fun searchPets(query: String): Flow<Resource<List<Pet>>>
     suspend fun createPet(name: String, breed: String, age: Int, photoUrl: String?, ownerId: String): Resource<Pet>
     suspend fun updatePet(id: String, name: String, breed: String, age: Int, photoUrl: String?, ownerId: String): Resource<Pet>
+
+    suspend fun deletePet(id: String): Resource<Unit>
 }

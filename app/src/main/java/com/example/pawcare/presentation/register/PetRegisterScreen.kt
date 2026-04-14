@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +33,7 @@ fun PetRegisterScreen(
     viewModel: PetRegisterViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(key1 = true) {
         viewModel.effect.collectLatest { effect ->
@@ -42,7 +44,14 @@ fun PetRegisterScreen(
         }
     }
 
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Nuevo Registro", fontWeight = FontWeight.Bold) },
@@ -70,9 +79,18 @@ fun PetRegisterScreen(
             
             // Progress Bar placeholder
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.weight(1f).height(4.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp)))
-                Box(modifier = Modifier.weight(1f).height(4.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp)))
-                Box(modifier = Modifier.weight(1f).height(4.dp).background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)))
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp)))
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp)))
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .height(4.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)))
             }
 
             Spacer(modifier = Modifier.height(32.dp))

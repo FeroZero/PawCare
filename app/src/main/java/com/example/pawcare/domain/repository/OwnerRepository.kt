@@ -10,4 +10,6 @@ interface OwnerRepository {
     fun getOwnerById(id: String): Flow<Resource<Owner>>
     fun getOwnerPets(ownerId: String): Flow<Resource<List<Pet>>>
     suspend fun createOwner(fullName: String, phone: String, email: String, address: String, isVip: Boolean): Resource<Owner>
+
+    suspend fun deleteOwner(id: String): Resource<Unit>
 }

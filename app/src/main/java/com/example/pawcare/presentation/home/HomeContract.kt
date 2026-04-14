@@ -20,7 +20,7 @@ sealed class HomeEvent {
 }
 
 enum class QuickAction {
-    REGISTER_PET, SCHEDULE_APPOINTMENT, PET_LIST, BILLING
+    REGISTER_PET, SCHEDULE_APPOINTMENT, PET_LIST, BILLING, PRODUCT
 }
 
 sealed class HomeEffect {
@@ -28,4 +28,5 @@ sealed class HomeEffect {
     object NavigateToPetList : HomeEffect()
     object NavigateToAppointments : HomeEffect()
     object NavigateToBilling : HomeEffect()
+    object NavigateToProduct : HomeEffect()
 }

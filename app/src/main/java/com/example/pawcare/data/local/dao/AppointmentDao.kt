@@ -1,6 +1,7 @@
 package com.example.pawcare.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -22,5 +23,5 @@ interface AppointmentDao {
     suspend fun upsertAppointments(appointments: List<AppointmentEntity>)
 
     @Query("DELETE FROM appointments WHERE id = :id")
-    suspend fun deleteAppointmentById(id: String)
+    suspend fun deleteAppointment(id: String)
 }

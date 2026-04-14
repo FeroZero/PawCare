@@ -21,16 +21,21 @@ class ServiceViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
-        getServices()
+        loadServices()
     }
 
     fun onEvent(event: ServiceUiEvent) {
         when (event) {
-            is ServiceUiEvent.Refresh -> getServices()
+            is ServiceUiEvent.Refresh -> loadServices()
+            is ServiceUiEvent.OnSearchQueryChange -> {
+                _state.update { it.copy(searchQuery = event.query) }
+            }
+            is ServiceUiEvent.OnDeleteService -> {
+            }
         }
     }
 
-    private fun getServices() {
+    private fun loadServices() {
         getServicesUseCase().onEach { result ->
             _state.update { currentState ->
                 when (result) {

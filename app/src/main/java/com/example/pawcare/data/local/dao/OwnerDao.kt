@@ -15,6 +15,6 @@ interface OwnerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertOwners(owners: List<OwnerEntity>)
 
-    @Delete
-    suspend fun deleteOwner(owner: OwnerEntity)
+    @Query("DELETE FROM owners WHERE id = :id")
+    suspend fun deleteOwner(id: String)
 }

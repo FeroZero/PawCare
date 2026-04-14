@@ -6,4 +6,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ServiceRepository {
     fun getServices(): Flow<Resource<List<Service>>>
+
+    suspend fun deleteServices(id: String): Resource<Unit>
 }
