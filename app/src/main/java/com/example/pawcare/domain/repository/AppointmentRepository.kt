@@ -14,4 +14,6 @@ interface AppointmentRepository {
         notes: String?
     ): Resource<Appointment>
     suspend fun updateAppointmentStatus(id: String, status: String, paymentMethod: String?): Resource<Appointment>
+
+    suspend fun deleteAppointment(id: String): Resource<Unit>
 }

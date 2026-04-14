@@ -71,4 +71,21 @@ class AppointmentRepositoryImpl @Inject constructor(
             is Resource.Loading -> Resource.Loading()
         }
     }
+
+    override suspend fun deleteAppointment(id: String): Resource<Unit> {
+        val result = safeApiCall { api.deleteAppointment(id) }
+
+        return when (result) {
+            is Resource.Success -> {
+                appointmentDao.deleteAppointment(id)
+                Resource.Success(Unit)
+            }
+            is Resource.Error -> {
+                Resource.Error(result.message)
+            }
+            is Resource.Loading -> {
+                Resource.Loading()
+            }
+        }
+    }
 }

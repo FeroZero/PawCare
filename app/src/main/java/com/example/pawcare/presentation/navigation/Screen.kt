@@ -7,4 +7,11 @@ sealed class Screen(val route: String) {
     object PetConfirmation : Screen("pet_confirmation/{petId}") {
         fun createRoute(petId: String) = "pet_confirmation/$petId"
     }
+
+    object PetList : Screen("pet_list")
+
+    object PetProfile : Screen("pet_profile/{petId}") {
+        fun createRoute(petId: String) = "pet_profile/$petId"
+    }
+    object ProductList : Screen("product_list")
 }

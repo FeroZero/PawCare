@@ -104,4 +104,20 @@ class OwnerRepositoryImpl @Inject constructor(
             is Resource.Loading -> Resource.Loading()
         }
     }
+    override suspend fun deleteOwner(id: String): Resource<Unit> {
+        val result = safeApiCall { api.deleteOwner(id) }
+
+        return when (result) {
+            is Resource.Success -> {
+                ownerDao.deleteOwner(id)
+                Resource.Success(Unit)
+            }
+            is Resource.Error -> {
+                Resource.Error(result.message)
+            }
+            is Resource.Loading -> {
+                Resource.Loading()
+            }
+        }
+    }
 }

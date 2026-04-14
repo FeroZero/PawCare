@@ -41,14 +41,23 @@ class PetRegisterViewModel @Inject constructor(
 
     private fun savePet() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+
+            val currentState = _state.value
+            val ageInt = currentState.age.toIntOrNull() ?: 0
+            val weightDouble = currentState.weight.toDoubleOrNull() ?: 0.0
+
+            if (ageInt <= 0 || weightDouble <= 0.0) {
+                _state.update { it.copy(error = "Por favor ingresa edad y peso válidos") }
+                return@launch
+            }
+            _state.update { it.copy(isLoading = true, error = null) }
             
             // 1. Create Owner first
             val ownerResult = ownerRepository.createOwner(
                 fullName = _state.value.ownerFullName,
                 phone = _state.value.ownerPhone,
                 email = _state.value.ownerEmail,
-                address = "", // Design doesn't show address, using empty
+                address = "",
                 isVip = false
             )
 

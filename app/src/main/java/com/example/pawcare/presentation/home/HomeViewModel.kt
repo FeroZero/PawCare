@@ -36,6 +36,7 @@ class HomeViewModel @Inject constructor(
                         QuickAction.SCHEDULE_APPOINTMENT -> _effect.emit(HomeEffect.NavigateToAppointments)
                         QuickAction.PET_LIST -> _effect.emit(HomeEffect.NavigateToPetList)
                         QuickAction.BILLING -> _effect.emit(HomeEffect.NavigateToBilling)
+                        QuickAction.PRODUCT ->  _effect.emit(HomeEffect.NavigateToProduct)
                     }
                 }
             }

@@ -52,4 +52,21 @@ class ProductRepositoryImpl @Inject constructor(
             is Resource.Loading -> Resource.Loading()
         }
     }
+
+    override suspend fun deleteProduct(id: String): Resource<Unit> {
+        val result = safeApiCall { api.deleteProduct(id) }
+
+        return when (result) {
+            is Resource.Success -> {
+                productDao.deleteProducts(id)
+                Resource.Success(Unit)
+            }
+            is Resource.Error -> {
+                Resource.Error(result.message)
+            }
+            is Resource.Loading -> {
+                Resource.Loading()
+            }
+        }
+    }
 }

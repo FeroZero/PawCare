@@ -8,6 +8,7 @@ import com.example.pawcare.domain.model.Service
 import com.example.pawcare.domain.repository.ServiceRepository
 import com.example.pawcare.domain.util.Resource
 import com.example.pawcare.domain.util.networkBoundResource
+import com.example.pawcare.data.remote.SafeApiCall
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -15,7 +16,7 @@ import javax.inject.Inject
 class ServiceRepositoryImpl @Inject constructor(
     private val api: PawCareApiService,
     private val serviceDao: ServiceDao
-) : ServiceRepository {
+) : ServiceRepository, SafeApiCall {
 
     override fun getServices(): Flow<Resource<List<Service>>> = networkBoundResource(
         query = { serviceDao.getAllServices().map { entities -> entities.map { it.toService() } } },
@@ -24,4 +25,21 @@ class ServiceRepositoryImpl @Inject constructor(
             serviceDao.upsertServices(dtos.map { it.toEntity() })
         }
     )
+
+    override suspend fun deleteServices(id: String): Resource<Unit> {
+        val result = safeApiCall { api.deleteService(id) }
+
+        return when (result) {
+            is Resource.Success -> {
+                serviceDao.deleteServices(id)
+                Resource.Success(Unit)
+            }
+            is Resource.Error -> {
+                Resource.Error(result.message)
+            }
+            is Resource.Loading -> {
+                Resource.Loading()
+            }
+        }
+    }
 }
