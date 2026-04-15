@@ -20,7 +20,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,10 +50,13 @@ fun HomeScreen(
     }
 
     Scaffold(
-        bottomBar = { PawBottomBar(
-            onNavigateToPets = onNavigateToPetList,
-            onNavigateToProduct = onNavigateToProduct
-
+        bottomBar = { 
+            PawBottomBar(
+                onNavigateToHome = { /* Already here */ },
+                onNavigateToPets = onNavigateToPetList,
+                onNavigateToProduct = onNavigateToProduct,
+                onNavigateToAppointments = onNavigateToAppointments,
+                currentRoute = "home"
             )
         }
     ) { padding ->
@@ -67,7 +69,6 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
             
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -104,7 +105,6 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -143,7 +143,6 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-
 
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -277,10 +276,12 @@ fun QuickActionButton(icon: ImageVector, label: String, modifier: Modifier = Mod
 
 @Composable
 fun PawBottomBar(
+    onNavigateToHome: () -> Unit,
     onNavigateToPets: () -> Unit,
-    onNavigateToProduct: () -> Unit
-    )
-{
+    onNavigateToProduct: () -> Unit,
+    onNavigateToAppointments: () -> Unit,
+    currentRoute: String
+) {
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 8.dp
@@ -288,37 +289,31 @@ fun PawBottomBar(
         NavigationBarItem(
             icon = { Icon(Icons.Default.Home, contentDescription = null) },
             label = { Text("Inicio") },
-            selected = true,
-            onClick = { }
+            selected = currentRoute == "home",
+            onClick = onNavigateToHome
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Pets, contentDescription = null) },
             label = { Text("Mascotas") },
-            selected = false,
-            onClick = { onNavigateToPets() }
+            selected = currentRoute == "pet_list",
+            onClick = onNavigateToPets
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Inventory2, contentDescription = null) },
             label = { Text("Inventario") },
-            selected = false,
-            onClick = { onNavigateToProduct() }
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.List, contentDescription = null) },
-            label = { Text("Servicios") },
-            selected = false,
-            onClick = { }
+            selected = currentRoute == "product_list",
+            onClick = onNavigateToProduct
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
             label = { Text("Citas") },
-            selected = false,
-            onClick = { }
+            selected = currentRoute == "appointment_list",
+            onClick = onNavigateToAppointments
         )
         NavigationBarItem(
             icon = { Icon(Icons.Default.Settings, contentDescription = null) },
             label = { Text("Config") },
-            selected = false,
+            selected = currentRoute == "settings",
             onClick = { }
         )
     }
