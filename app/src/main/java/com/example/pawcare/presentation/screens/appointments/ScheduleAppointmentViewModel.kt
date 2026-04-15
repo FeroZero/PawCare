@@ -31,18 +31,15 @@ class ScheduleAppointmentViewModel @Inject constructor(
     val effect = _effect.asSharedFlow()
 
     private val appointmentId: String? = savedStateHandle["appointmentId"]
+    private var isEditLoaded = false
 
     init {
-        loadData()
+        loadMasterData()
         generateTimeSlots()
-        if (appointmentId != null) {
-            loadAppointmentForEdit(appointmentId)
-        }
     }
 
-    private fun loadData() {
+    private fun loadMasterData() {
         _state.update { it.copy(isLoading = true) }
-        
         combine(
             petRepository.getPets(),
             serviceRepository.getServices()
@@ -55,39 +52,40 @@ class ScheduleAppointmentViewModel @Inject constructor(
                     pets = pets,
                     services = services,
                     selectedPet = currentState.selectedPet ?: pets.firstOrNull(),
+                    selectedService = currentState.selectedService ?: services.firstOrNull(),
                     isLoading = false
                 )
+            }
+            
+            // Cargamos la cita solo una vez para evitar sobrescribir cambios del usuario
+            if (appointmentId != null && !isEditLoaded && pets.isNotEmpty() && services.isNotEmpty()) {
+                loadAppointmentForEdit(appointmentId)
             }
         }.launchIn(viewModelScope)
     }
 
     private fun loadAppointmentForEdit(id: String) {
+        isEditLoaded = true
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
             val result = appointmentRepository.getAppointmentById(id)
             if (result is Resource.Success) {
                 val appointment = result.data
-                _state.update { it.copy(
-                    selectedDate = LocalDate.parse(appointment.date),
-                    selectedTimeSlot = appointment.timeSlot,
-                    selectedPet = it.pets.find { p -> p.id == appointment.petId },
-                    selectedService = it.services.find { s -> s.id == appointment.services.firstOrNull()?.id },
-                    isLoading = false
-                ) }
-            } else if (result is Resource.Error) {
-                _state.update { it.copy(isLoading = false, error = result.message) }
+                _state.update { currentState ->
+                    currentState.copy(
+                        selectedDate = try { LocalDate.parse(appointment.date) } catch(e: Exception) { LocalDate.now() },
+                        selectedTimeSlot = appointment.timeSlot,
+                        selectedPet = currentState.pets.find { it.id == appointment.petId },
+                        selectedService = currentState.services.find { s -> appointment.services.any { it.id == s.id } }
+                    )
+                }
             }
         }
     }
 
     private fun generateTimeSlots() {
         val slots = listOf(
-            TimeSlot("8:00 AM"),
-            TimeSlot("9:00 AM"),
-            TimeSlot("10:00 AM"),
-            TimeSlot("11:00 AM"),
-            TimeSlot("2:00 PM"),
-            TimeSlot("3:00 PM"),
+            TimeSlot("8:00 AM"), TimeSlot("9:00 AM"), TimeSlot("10:00 AM"),
+            TimeSlot("11:00 AM"), TimeSlot("2:00 PM"), TimeSlot("3:00 PM"),
             TimeSlot("4:00 PM")
         )
         _state.update { it.copy(availableTimeSlots = slots) }
@@ -95,21 +93,11 @@ class ScheduleAppointmentViewModel @Inject constructor(
 
     fun onEvent(event: ScheduleAppointmentUiEvent) {
         when (event) {
-            is ScheduleAppointmentUiEvent.OnDateSelected -> {
-                _state.update { it.copy(selectedDate = event.date) }
-            }
-            is ScheduleAppointmentUiEvent.OnTimeSlotSelected -> {
-                _state.update { it.copy(selectedTimeSlot = event.timeSlot) }
-            }
-            is ScheduleAppointmentUiEvent.OnPetSelected -> {
-                _state.update { it.copy(selectedPet = event.pet) }
-            }
-            is ScheduleAppointmentUiEvent.OnServiceSelected -> {
-                _state.update { it.copy(selectedService = event.service) }
-            }
-            ScheduleAppointmentUiEvent.OnConfirmAppointment -> {
-                confirmAppointment()
-            }
+            is ScheduleAppointmentUiEvent.OnDateSelected -> _state.update { it.copy(selectedDate = event.date) }
+            is ScheduleAppointmentUiEvent.OnTimeSlotSelected -> _state.update { it.copy(selectedTimeSlot = event.timeSlot) }
+            is ScheduleAppointmentUiEvent.OnPetSelected -> _state.update { it.copy(selectedPet = event.pet) }
+            is ScheduleAppointmentUiEvent.OnServiceSelected -> _state.update { it.copy(selectedService = event.service) }
+            ScheduleAppointmentUiEvent.OnConfirmAppointment -> confirmAppointment()
             ScheduleAppointmentUiEvent.OnDismissSuccess -> {
                 _state.update { it.copy(isSuccess = false) }
                 viewModelScope.launch { _effect.emit(ScheduleAppointmentSideEffect.NavigateBack) }
@@ -120,35 +108,23 @@ class ScheduleAppointmentViewModel @Inject constructor(
     private fun confirmAppointment() {
         val currentState = _state.value
         if (currentState.selectedTimeSlot == null || currentState.selectedPet == null || currentState.selectedService == null) {
-            _state.update { it.copy(error = "Por favor completa todos los campos") }
+            _state.update { it.copy(error = "Completa todos los campos") }
             return
         }
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val dateStr = currentState.selectedDate.format(formatter)
+            val dateStr = currentState.selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             
             val result = if (appointmentId == null) {
-                createAppointmentUseCase(
-                    date = dateStr,
-                    timeSlot = currentState.selectedTimeSlot,
-                    petId = currentState.selectedPet.id,
-                    serviceIds = listOf(currentState.selectedService.id),
-                    notes = null
-                )
+                createAppointmentUseCase(dateStr, currentState.selectedTimeSlot, currentState.selectedPet.id, listOf(currentState.selectedService.id), null)
             } else {
-                // In a real scenario, we would call an updateAppointmentUseCase
-                // For now, let's assume update status is enough or we use same creation logic with ID
-                appointmentRepository.updateAppointmentStatus(appointmentId, "pending", null)
-                // Note: Real editing of date/time/service would need a specific PUT endpoint
-                Resource.Success(com.example.pawcare.domain.model.Appointment(
+                appointmentRepository.updateAppointment(com.example.pawcare.domain.model.Appointment(
                     id = appointmentId,
                     date = dateStr,
                     timeSlot = currentState.selectedTimeSlot,
                     status = "pending",
-                    totalPrice = 0.0,
+                    totalPrice = currentState.selectedService.price,
                     paymentMethod = null,
                     notes = null,
                     petId = currentState.selectedPet.id,
@@ -158,14 +134,10 @@ class ScheduleAppointmentViewModel @Inject constructor(
                 ))
             }
 
-            when (result) {
-                is Resource.Success -> {
-                    _state.update { it.copy(isLoading = false, isSuccess = true) }
-                }
-                is Resource.Error -> {
-                    _state.update { it.copy(isLoading = false, error = result.message) }
-                }
-                is Resource.Loading -> {}
+            if (result is Resource.Success) {
+                _state.update { it.copy(isLoading = false, isSuccess = true) }
+            } else if (result is Resource.Error) {
+                _state.update { it.copy(isLoading = false, error = result.message) }
             }
         }
     }
