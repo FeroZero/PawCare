@@ -33,6 +33,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -51,7 +52,11 @@ android {
 }
 
 dependencies {
+    // Desugaring para soportar java.time en API < 26
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     implementation(libs.firebase.annotations)
+    
     // Jetpack Compose
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
