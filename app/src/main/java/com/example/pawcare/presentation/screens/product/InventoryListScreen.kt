@@ -33,7 +33,8 @@ fun InventoryListScreen(
     onNavigateToForm: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToPets: () -> Unit,
-    onNavigateToAppointments: () -> Unit
+    onNavigateToAppointments: () -> Unit,
+    onNavigateToPaymentList: () -> Unit
 ) {
     var productToDelete by remember { mutableStateOf<Product?>(null) }
 
@@ -82,6 +83,7 @@ fun InventoryListScreen(
                 onNavigateToPets = onNavigateToPets,
                 onNavigateToProduct = { /* Ya estamos aquí */ },
                 onNavigateToAppointments = onNavigateToAppointments,
+                onNavigateToPaymentList = onNavigateToPaymentList,
                 currentRoute = "product_list"
             )
         },

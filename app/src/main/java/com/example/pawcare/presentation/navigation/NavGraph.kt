@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.pawcare.domain.repository.PaymentRepository
 import com.example.pawcare.domain.repository.PetRepository
 import com.example.pawcare.presentation.home.HomeScreen
 import com.example.pawcare.presentation.login.LoginScreen
@@ -16,7 +17,6 @@ import com.example.pawcare.presentation.register.PetConfirmationScreen
 import com.example.pawcare.presentation.screens.pet.PetListScreen
 import com.example.pawcare.presentation.screens.pet.PetProfileScreen
 import com.example.pawcare.presentation.components.pets.PetViewModel
-import com.example.pawcare.presentation.components.pets.PetUiEvent
 import com.example.pawcare.presentation.components.products.ProductViewModel
 import com.example.pawcare.presentation.register.PetRegisterScreen
 import com.example.pawcare.presentation.screens.appointments.AppointmentConfirmationScreen
@@ -25,11 +25,18 @@ import com.example.pawcare.presentation.screens.appointments.AppointmentListScre
 import com.example.pawcare.presentation.components.appointments.AppointmentViewModel
 import com.example.pawcare.presentation.screens.product.InventoryListScreen
 import com.example.pawcare.presentation.screens.product.ProductFormScreen
+import com.example.pawcare.presentation.screens.appointments.PaymentDetailScreen
+import com.example.pawcare.presentation.screens.appointments.PaymentListScreen
+import com.example.pawcare.presentation.screens.appointments.PaymentListViewModel
+import com.example.pawcare.presentation.screens.appointments.PaymentScreen
+import com.example.pawcare.presentation.screens.appointments.PaymentViewModel
+import com.example.pawcare.presentation.screens.appointments.PaymentConfirmationScreen
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    petRepository: PetRepository
+    petRepository: PetRepository,
+    paymentRepository: PaymentRepository
 ) {
     NavHost(
         navController = navController,
@@ -49,13 +56,34 @@ fun NavGraph(
             HomeScreen(
                 onNavigateToRegisterPet = { navController.navigate(Screen.PetRegister.route) },
                 onNavigateToPetList = { navController.navigate(Screen.PetList.route) },
-                onNavigateToProduct = { navController.navigate(Screen.ProductList.route) },
-                onNavigateToAppointments = { navController.navigate(Screen.PetList.route) },
-                onNavigateToBilling = { /* TODO */ }
+                onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
+                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) },
+                onNavigateToPayment = { appointment ->
+                    navController.navigate(
+                        Screen.Payment.createRoute(
+                            appointmentId = appointment.id,
+                            petName = appointment.petName,
+                            service = appointment.services.firstOrNull()?.name ?: "Servicio",
+                            date = appointment.date,
+                            amount = appointment.totalPrice,
+                            employee = "Personal"
+                        )
+                    )
+                },
+                onNavigateToProduct = { navController.navigate(Screen.ProductList.route) }
             )
         }
 
-        composable(Screen.ScheduleAppointment.route) {
+        composable(
+            route = Screen.ScheduleAppointment.route,
+            arguments = listOf(
+                navArgument("appointmentId") { 
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
             ScheduleAppointmentScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToRegisterPet = { navController.navigate(Screen.PetRegister.route) },
@@ -67,7 +95,8 @@ fun NavGraph(
                 onNavigateToHome = { navController.navigate(Screen.Home.route) },
                 onNavigateToPets = { navController.navigate(Screen.PetList.route) },
                 onNavigateToProduct = { navController.navigate(Screen.ProductList.route) },
-                onNavigateToAppointments = { navController.navigate(Screen.PetList.route) }
+                onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
+                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) }
             )
         }
 
@@ -90,7 +119,7 @@ fun NavGraph(
                 time = time,
                 petName = petName,
                 serviceName = serviceName,
-                onViewAppointments = { navController.navigate(Screen.PetList.route) },
+                onViewAppointments = { navController.navigate(Screen.AppointmentList.route) },
                 onScheduleAnother = {
                     navController.navigate(Screen.ScheduleAppointment.route) {
                         popUpTo(Screen.Home.route)
@@ -104,22 +133,25 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.PetList.route) {
+        composable(Screen.AppointmentList.route) {
             val viewModel: AppointmentViewModel = hiltViewModel()
             val state by viewModel.state.collectAsState()
             AppointmentListScreen(
                 state = state,
                 onEvent = viewModel::onEvent,
-                onNavigateToEdit = { /* TODO */ },
+                onNavigateToEdit = { id -> 
+                    navController.navigate(Screen.ScheduleAppointment.createRoute(id)) 
+                },
                 onNavigateToSchedule = { navController.navigate(Screen.ScheduleAppointment.route) },
                 onNavigateToHome = { navController.navigate(Screen.Home.route) },
-                onNavigateToPets = { /* Already here */ },
-                onNavigateToProducts = { navController.navigate(Screen.ProductList.route) }
+                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
+                onNavigateToProducts = { navController.navigate(Screen.ProductList.route) },
+                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) },
+                onNavigateToAppointments = { /* Already here */ }
             )
         }
 
         // --- MASCOTAS ---
-        // (Maintaining existing Pet screens)
         composable(Screen.PetRegister.route) {
             PetRegisterScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -147,6 +179,23 @@ fun NavGraph(
                 petRepository = petRepository
             )
         }
+
+        composable(Screen.PetList.route) {
+            val viewModel: PetViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsState()
+            PetListScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                onNavigateToRegister = { navController.navigate(Screen.PetRegister.route) }
+            )
+        }
+
+        composable(
+            route = Screen.PetProfile.route,
+            arguments = listOf(navArgument("petId") { type = NavType.StringType })
+        ) {
+            // Placeholder: Para implementar esto se requiere un ViewModel que cargue Pet y Owner por ID.
+        }
         
         composable(Screen.ProductList.route) {
             val viewModel: ProductViewModel = hiltViewModel()
@@ -157,7 +206,124 @@ fun NavGraph(
                 onNavigateToForm = { navController.navigate("product_form") },
                 onNavigateToHome = { navController.navigate(Screen.Home.route) },
                 onNavigateToPets = { navController.navigate(Screen.PetList.route) },
-                onNavigateToAppointments = { navController.navigate(Screen.PetList.route) }
+                onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
+                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) }
+            )
+        }
+
+        composable("product_form") {
+            val viewModel: ProductViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsState()
+            ProductFormScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // --- PAGO ---
+        composable(
+            route = Screen.Payment.route,
+            arguments = listOf(
+                navArgument("appointmentId") { type = NavType.StringType },
+                navArgument("petName") { type = NavType.StringType },
+                navArgument("service") { type = NavType.StringType },
+                navArgument("date") { type = NavType.StringType },
+                navArgument("amount") { type = NavType.StringType },
+                navArgument("employee") { type = NavType.StringType }
+            )
+        ) {
+            PaymentScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = { 
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
+                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
+                onNavigateToProduct = { navController.navigate(Screen.ProductList.route) },
+                onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
+                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) },
+                onNavigateToConfirmation = { receipt, amount, pet, service, date, method, employee ->
+                    navController.navigate(
+                        Screen.PaymentConfirmation.createRoute(receipt, amount, pet, service, date, method, employee)
+                    ) {
+                        popUpTo(Screen.Payment.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // --- CONFIRMACIÓN DE PAGO ---
+        composable(
+            route = Screen.PaymentConfirmation.route,
+            arguments = listOf(
+                navArgument("receiptNumber") { type = NavType.StringType },
+                navArgument("amount") { type = NavType.StringType },
+                navArgument("petName") { type = NavType.StringType },
+                navArgument("service") { type = NavType.StringType },
+                navArgument("date") { type = NavType.StringType },
+                navArgument("method") { type = NavType.StringType },
+                navArgument("employee") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val receiptNumber = backStackEntry.arguments?.getString("receiptNumber") ?: ""
+            val amountStr = backStackEntry.arguments?.getString("amount") ?: "0.0"
+            val amount = amountStr.toDoubleOrNull() ?: 0.0
+            val petName = backStackEntry.arguments?.getString("petName") ?: ""
+            val service = backStackEntry.arguments?.getString("service") ?: ""
+            val date = backStackEntry.arguments?.getString("date") ?: ""
+            val method = backStackEntry.arguments?.getString("method") ?: ""
+            val employee = backStackEntry.arguments?.getString("employee") ?: ""
+
+            PaymentConfirmationScreen(
+                receiptNumber = receiptNumber,
+                amount = amount,
+                petName = petName,
+                service = service,
+                date = date,
+                method = method,
+                employee = employee,
+                onDownloadReceipt = { /* TODO */ },
+                onViewPaymentList = {
+                    navController.navigate(Screen.PaymentList.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                onGoToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // --- HISTORIAL DE COBROS ---
+        composable(Screen.PaymentList.route) {
+            val viewModel: PaymentListViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsState()
+            PaymentListScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                onNavigateToDetail = { id -> navController.navigate(Screen.PaymentDetail.createRoute(id)) },
+                onNavigateToHome = { navController.navigate(Screen.Home.route) },
+                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
+                onNavigateToProducts = { navController.navigate(Screen.ProductList.route) },
+                onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
+                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) }
+            )
+        }
+
+        composable(
+            route = Screen.PaymentDetail.route,
+            arguments = listOf(navArgument("paymentId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val paymentId = backStackEntry.arguments?.getString("paymentId") ?: ""
+            PaymentDetailScreen(
+                paymentId = paymentId,
+                paymentRepository = paymentRepository,
+                onBack = { navController.popBackStack() },
+                onDeleteSuccess = { navController.popBackStack() }
             )
         }
     }
