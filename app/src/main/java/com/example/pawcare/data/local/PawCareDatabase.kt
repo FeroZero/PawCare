@@ -11,7 +11,8 @@ import com.example.pawcare.data.local.entity.*
         PetEntity::class,
         ServiceEntity::class,
         AppointmentEntity::class,
-        ProductEntity::class
+        ProductEntity::class,
+        PaymentEntity::class
     ],
     version = 7,
     exportSchema = false
@@ -22,4 +23,5 @@ abstract class PawCareDatabase : RoomDatabase() {
     abstract fun serviceDao(): ServiceDao
     abstract fun appointmentDao(): AppointmentDao
     abstract fun productDao(): ProductDao
+    abstract fun paymentDao(): PaymentDao
 }

@@ -23,6 +23,7 @@ turbine = "1.2.0"
 archCore = "2.2.0"
 ksp = "2.0.21-1.0.25"
 firebaseAnnotations = "17.0.0"
+desugarJdkLibs = "2.1.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -72,6 +73,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "archCore" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 firebase-annotations = { group = "com.google.firebase", name = "firebase-annotations", version.ref = "firebaseAnnotations" }
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

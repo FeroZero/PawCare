@@ -1,6 +1,7 @@
 package com.example.pawcare.data.repository
 
 import com.example.pawcare.data.local.dao.AppointmentDao
+import com.example.pawcare.data.local.dao.ServiceDao
 import com.example.pawcare.data.mapper.toAppointment
 import com.example.pawcare.data.mapper.toEntity
 import com.example.pawcare.data.remote.PawCareApiService
@@ -17,7 +18,8 @@ import javax.inject.Inject
 
 class AppointmentRepositoryImpl @Inject constructor(
     private val api: PawCareApiService,
-    private val appointmentDao: AppointmentDao
+    private val appointmentDao: AppointmentDao,
+    private val serviceDao: ServiceDao
 ) : AppointmentRepository, SafeApiCall {
 
     override fun getAppointments(date: String?, status: String?): Flow<Resource<List<Appointment>>> = networkBoundResource(
@@ -53,14 +55,34 @@ class AppointmentRepositoryImpl @Inject constructor(
         val result = safeApiCall {
             api.createAppointment(CreateAppointmentRequest(date, timeSlot, petId, serviceIds, notes))
         }
+        if (result is Resource.Success) {
+            appointmentDao.upsertAppointments(listOf(result.data.toEntity()))
+        }
         return when (result) {
-            is Resource.Success -> {
-                appointmentDao.upsertAppointments(listOf(result.data.toEntity()))
-                Resource.Success(result.data.toAppointment())
-            }
+            is Resource.Success -> Resource.Success(result.data.toAppointment())
             is Resource.Error -> Resource.Error(result.message)
             is Resource.Loading -> Resource.Loading()
         }
+    }
+
+    override suspend fun updateAppointment(appointment: Appointment): Resource<Unit> {
+        val request = CreateAppointmentRequest(
+            date = appointment.date,
+            timeSlot = appointment.timeSlot,
+            petId = appointment.petId,
+            serviceIds = appointment.services.map { it.id },
+            notes = appointment.notes
+        )
+        
+        // 1. Sincronizamos con la API
+        val apiResult = safeApiCall { api.updateAppointment(appointment.id, request) }
+        
+        // 2. ACTUALIZACIÓN LOCAL FORZADA: Guardamos los nuevos datos (incl. fecha/hora/mascota) 
+        // en Room para que la UI se refresque instantáneamente
+        appointmentDao.upsertAppointments(listOf(appointment.toEntity()))
+        
+        return if (apiResult is Resource.Error) Resource.Error(apiResult.message) 
+        else Resource.Success(Unit)
     }
 
     override suspend fun updateAppointmentStatus(
@@ -71,11 +93,11 @@ class AppointmentRepositoryImpl @Inject constructor(
         val result = safeApiCall {
             api.updateAppointmentStatus(id, UpdateAppointmentStatusRequest(status, paymentMethod))
         }
+        if (result is Resource.Success) {
+            appointmentDao.upsertAppointments(listOf(result.data.toEntity()))
+        }
         return when (result) {
-            is Resource.Success -> {
-                appointmentDao.upsertAppointments(listOf(result.data.toEntity()))
-                Resource.Success(result.data.toAppointment())
-            }
+            is Resource.Success -> Resource.Success(result.data.toAppointment())
             is Resource.Error -> Resource.Error(result.message)
             is Resource.Loading -> Resource.Loading()
         }
@@ -83,18 +105,7 @@ class AppointmentRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAppointment(id: String): Resource<Unit> {
         val result = safeApiCall { api.deleteAppointment(id) }
-
-        return when (result) {
-            is Resource.Success -> {
-                appointmentDao.deleteAppointment(id)
-                Resource.Success(Unit)
-            }
-            is Resource.Error -> {
-                Resource.Error(result.message)
-            }
-            is Resource.Loading -> {
-                Resource.Loading()
-            }
-        }
+        appointmentDao.deleteAppointment(id)
+        return if (result is Resource.Error) Resource.Error(result.message) else Resource.Success(Unit)
     }
 }

@@ -97,7 +97,8 @@ class PetRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deletePet(id: String): Resource<Unit> {
-        val result = safeApiCall { api.deletePet(id) }
+        // Especificamos <Unit> explícitamente para ayudar al compilador
+        val result = safeApiCall<Unit> { api.deletePet(id) }
 
         if (result is Resource.Success || result is Resource.Error) {
             petDao.deletePets(id)

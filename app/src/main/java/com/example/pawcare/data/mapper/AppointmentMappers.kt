@@ -36,9 +36,23 @@ fun AppointmentDto.toEntity(): AppointmentEntity {
     )
 }
 
+fun Appointment.toEntity(): AppointmentEntity {
+    return AppointmentEntity(
+        id = id,
+        date = date,
+        timeSlot = timeSlot,
+        status = status,
+        totalPrice = totalPrice,
+        paymentMethod = paymentMethod,
+        notes = notes,
+        petId = petId,
+        petName = petName,
+        petPhotoUrl = petPhotoUrl,
+        serviceIds = services.joinToString(",") { it.id }
+    )
+}
+
 fun AppointmentEntity.toAppointment(): Appointment {
-    // Note: services list is empty here because we store only IDs in the entity.
-    // In a real scenario, we might need a join or another query to fetch services.
     return Appointment(
         id = id,
         date = date,

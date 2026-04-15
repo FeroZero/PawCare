@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pawcare.domain.model.Product
 import com.example.pawcare.presentation.components.products.ProductUiEvent
 import com.example.pawcare.presentation.components.products.ProductUiState
+import com.example.pawcare.presentation.home.PawBottomBar
 import com.example.pawcare.presentation.screens.pet.PawCareCard
 import com.example.pawcare.ui.theme.*
 
@@ -34,6 +35,10 @@ fun InventoryListScreen(
     onNavigateToForm: () -> Unit,
     onNavigateToCatalogue: () -> Unit,
     onBack: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToPets: () -> Unit,
+    onNavigateToAppointments: () -> Unit,
+    onNavigateToPaymentList: () -> Unit
 ) {
     var productToDelete by remember { mutableStateOf<Product?>(null) }
 
@@ -74,6 +79,16 @@ fun InventoryListScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
             }
+        },
+        bottomBar = {
+            PawBottomBar(
+                onNavigateToHome = onNavigateToHome,
+                onNavigateToPets = onNavigateToPets,
+                onNavigateToProduct = { /* Ya estamos aquí */ },
+                onNavigateToAppointments = onNavigateToAppointments,
+                onNavigateToPaymentList = onNavigateToPaymentList,
+                currentRoute = "product_list"
+            )
         },
         containerColor = Background
     ) { padding ->
