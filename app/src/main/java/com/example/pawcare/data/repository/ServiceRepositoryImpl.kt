@@ -27,7 +27,8 @@ class ServiceRepositoryImpl @Inject constructor(
     )
 
     override suspend fun deleteServices(id: String): Resource<Unit> {
-        val result = safeApiCall { api.deleteService(id) }
+        // Especificamos <Unit> explícitamente para resolver el error de inferencia
+        val result = safeApiCall<Unit> { api.deleteService(id) }
 
         return when (result) {
             is Resource.Success -> {
@@ -35,10 +36,10 @@ class ServiceRepositoryImpl @Inject constructor(
                 Resource.Success(Unit)
             }
             is Resource.Error -> {
-                Resource.Error(result.message)
+                Resource.Error<Unit>(result.message)
             }
             is Resource.Loading -> {
-                Resource.Loading()
+                Resource.Loading<Unit>()
             }
         }
     }

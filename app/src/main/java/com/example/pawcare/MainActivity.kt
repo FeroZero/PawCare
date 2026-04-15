@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
+import com.example.pawcare.domain.repository.PaymentRepository
 import com.example.pawcare.domain.repository.PetRepository
 import com.example.pawcare.presentation.navigation.NavGraph
 import com.example.pawcare.ui.theme.PawCareTheme
@@ -18,6 +19,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var petRepository: PetRepository
 
+    @Inject
+    lateinit var paymentRepository: PaymentRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -27,7 +31,8 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 NavGraph(
                     navController = navController,
-                    petRepository = petRepository
+                    petRepository = petRepository,
+                    paymentRepository = paymentRepository
                 )
             }
         }

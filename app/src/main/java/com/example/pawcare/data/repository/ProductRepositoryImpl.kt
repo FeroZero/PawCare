@@ -54,7 +54,8 @@ class ProductRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteProduct(id: String): Resource<Unit> {
-        val result = safeApiCall { api.deleteProduct(id) }
+        // Especificamos <Unit> para resolver el error de inferencia de tipos
+        val result = safeApiCall<Unit> { api.deleteProduct(id) }
 
         return when (result) {
             is Resource.Success -> {

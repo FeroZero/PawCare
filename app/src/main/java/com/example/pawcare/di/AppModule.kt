@@ -29,7 +29,9 @@ object AppModule {
             context,
             PawCareDatabase::class.java,
             "pawcare_db"
-        ).build()
+        )
+        .fallbackToDestructiveMigration() // Evita el crash al subir de versión (1 a 2)
+        .build()
     }
 
     @Provides
@@ -46,6 +48,9 @@ object AppModule {
 
     @Provides
     fun provideProductDao(db: PawCareDatabase) = db.productDao()
+
+    @Provides
+    fun providePaymentDao(db: PawCareDatabase) = db.paymentDao()
 
     @Provides
     @Singleton
@@ -94,8 +99,9 @@ object AppModule {
     @Singleton
     fun provideAppointmentRepository(
         api: PawCareApiService,
-        appointmentDao: AppointmentDao
-    ): AppointmentRepository = AppointmentRepositoryImpl(api, appointmentDao)
+        appointmentDao: AppointmentDao,
+        serviceDao: ServiceDao
+    ): AppointmentRepository = AppointmentRepositoryImpl(api, appointmentDao, serviceDao)
 
     @Provides
     @Singleton
@@ -103,4 +109,10 @@ object AppModule {
         api: PawCareApiService,
         productDao: ProductDao
     ): ProductRepository = ProductRepositoryImpl(api, productDao)
+
+    @Provides
+    @Singleton
+    fun providePaymentRepository(
+        paymentDao: PaymentDao
+    ): PaymentRepository = PaymentRepositoryImpl(paymentDao)
 }

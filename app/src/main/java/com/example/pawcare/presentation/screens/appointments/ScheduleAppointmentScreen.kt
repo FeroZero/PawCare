@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pawcare.domain.model.Pet
 import com.example.pawcare.domain.model.Service
 import com.example.pawcare.presentation.home.PawBottomBar
+import com.example.pawcare.presentation.components.appointments.AppointmentUiEvent
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.*
@@ -45,6 +46,7 @@ fun ScheduleAppointmentScreen(
     onNavigateToPets: () -> Unit,
     onNavigateToProduct: () -> Unit,
     onNavigateToAppointments: () -> Unit,
+    onNavigateToPaymentList: () -> Unit,
     viewModel: ScheduleAppointmentViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -71,7 +73,7 @@ fun ScheduleAppointmentScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Agendar Cita", fontWeight = FontWeight.Bold) },
+                title = { Text(if (state.selectedPet != null && state.isLoading.not() && state.pets.any { it.id == state.selectedPet!!.id }) "Editar Cita" else "Agendar Cita", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -86,6 +88,7 @@ fun ScheduleAppointmentScreen(
                 onNavigateToPets = onNavigateToPets,
                 onNavigateToProduct = onNavigateToProduct,
                 onNavigateToAppointments = onNavigateToAppointments,
+                onNavigateToPaymentList = onNavigateToPaymentList,
                 currentRoute = "schedule_appointment"
             )
         },
@@ -159,7 +162,7 @@ fun ScheduleAppointmentScreen(
                 if (state.isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Confirmar Cita", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+                    Text(if (state.selectedTimeSlot != null) "Guardar Cambios" else "Confirmar Cita", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
                 }
             }
             

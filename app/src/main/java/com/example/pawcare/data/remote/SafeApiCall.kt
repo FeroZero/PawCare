@@ -9,25 +9,28 @@ interface SafeApiCall {
         return try {
             val response = apiCall()
             if (response.isSuccessful) {
-                // Manejo especial para respuestas sin cuerpo (ej. DELETE o Unit)
                 val body = response.body()
-                if (body == null && response.code() == 204) {
+                if (body == null || response.code() == 204) {
                     @Suppress("UNCHECKED_CAST")
                     Resource.Success(Unit as T)
-                } else if (body != null) {
-                    Resource.Success(body)
                 } else {
-                    @Suppress("UNCHECKED_CAST")
-                    Resource.Success(Unit as T)
+                    Resource.Success(body)
                 }
             } else {
-                val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
-                Resource.Error(errorMsg)
+                val errorBody = response.errorBody()?.string() ?: ""
+                val message = if (errorBody.contains("<!DOCTYPE html>") || errorBody.length > 200) {
+                    "Error en el servidor (${response.code()})"
+                } else if (errorBody.isNotBlank()) {
+                    errorBody
+                } else {
+                    "Error: ${response.code()} ${response.message()}"
+                }
+                Resource.Error(message)
             }
         } catch (e: IOException) {
-            Resource.Error("No hay conexión a internet. Revisa tu red.")
+            Resource.Error("Revisa tu conexión a internet")
         } catch (e: Exception) {
-            Resource.Error("Error inesperado: ${e.localizedMessage}")
+            Resource.Error("Ha ocurrido un error inesperado")
         }
     }
 }

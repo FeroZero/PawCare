@@ -33,7 +33,9 @@ fun AppointmentListScreen(
     onNavigateToSchedule: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToPets: () -> Unit,
-    onNavigateToProducts: () -> Unit
+    onNavigateToProducts: () -> Unit,
+    onNavigateToPaymentList: () -> Unit,
+    onNavigateToAppointments: () -> Unit
 ) {
     var appointmentToDelete by remember { mutableStateOf<Appointment?>(null) }
 
@@ -78,7 +80,8 @@ fun AppointmentListScreen(
                 onNavigateToHome = onNavigateToHome,
                 onNavigateToPets = onNavigateToPets,
                 onNavigateToProduct = onNavigateToProducts,
-                onNavigateToAppointments = { /* Already here */ },
+                onNavigateToAppointments = onNavigateToAppointments,
+                onNavigateToPaymentList = onNavigateToPaymentList,
                 currentRoute = "appointment_list"
             ) 
         },
@@ -151,7 +154,7 @@ fun FilterChipItem(label: String, count: Int, isSelected: Boolean, onClick: () -
         border = FilterChipDefaults.filterChipBorder(
             enabled = true,
             selected = isSelected,
-            borderColor = if (isSelected) Color.Transparent else Color.LightGray.copy(alpha = 0.5f)
+            borderColor = if (isSelected) Color.Transparent else Color(0xFFE2D9CF)
         )
     )
 }
@@ -202,7 +205,7 @@ fun AppointmentCard(appointment: Appointment, onEdit: () -> Unit, onDelete: () -
             AppointmentInfoRow(Icons.Default.Event, appointment.date)
             AppointmentInfoRow(Icons.Default.AccessTime, appointment.timeSlot)
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = Color(0xFFF0ECE7))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onEdit) {

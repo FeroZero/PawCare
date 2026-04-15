@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.pawcare.domain.model.Appointment
+import com.example.pawcare.domain.model.Service
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -31,7 +33,8 @@ fun HomeScreen(
     onNavigateToRegisterPet: () -> Unit,
     onNavigateToPetList: () -> Unit,
     onNavigateToAppointments: () -> Unit,
-    onNavigateToBilling: () -> Unit,
+    onNavigateToPaymentList: () -> Unit,
+    onNavigateToPayment: (Appointment) -> Unit,
     onNavigateToProduct: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -43,10 +46,78 @@ fun HomeScreen(
                 HomeEffect.NavigateToRegisterPet -> onNavigateToRegisterPet()
                 HomeEffect.NavigateToPetList -> onNavigateToPetList()
                 HomeEffect.NavigateToAppointments -> onNavigateToAppointments()
-                HomeEffect.NavigateToBilling -> onNavigateToBilling()
+                HomeEffect.NavigateToPaymentList -> onNavigateToPaymentList()
                 HomeEffect.NavigateToProduct -> onNavigateToProduct()
+                is HomeEffect.NavigateToPayment -> onNavigateToPayment(effect.appointment)
+                else -> {}
             }
         }
+    }
+
+    if (state.isSelectAppointmentDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onEvent(HomeEvent.OnDismissDialog) },
+            confirmButton = {},
+            title = { Text("Selecciona mascota para cobrar", fontWeight = FontWeight.Bold) },
+            text = {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(state.pendingAppointments) { appointment ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.onEvent(HomeEvent.OnAppointmentSelected(appointment)) },
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF9F5)),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.LightGray)
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Pets, null, tint = Color(0xFF3D2314), modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(appointment.petName, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = appointment.services.joinToString(", ") { it.name }.ifEmpty { "Servicio" },
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                                Text(
+                                    text = "RD$${appointment.totalPrice}",
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF3D2314),
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    if (state.isServicesDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onEvent(HomeEvent.OnDismissServicesDialog) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onEvent(HomeEvent.OnDismissServicesDialog) }) {
+                    Text("Cerrar", color = Color(0xFF3D2314))
+                }
+            },
+            title = { Text("Servicios y Precios", fontWeight = FontWeight.Bold) },
+            text = {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.services) { service ->
+                        ServicePriceItem(service)
+                    }
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 
     Scaffold(
@@ -56,6 +127,7 @@ fun HomeScreen(
                 onNavigateToPets = onNavigateToPetList,
                 onNavigateToProduct = onNavigateToProduct,
                 onNavigateToAppointments = onNavigateToAppointments,
+                onNavigateToPaymentList = onNavigateToPaymentList,
                 currentRoute = "home"
             )
         }
@@ -171,6 +243,33 @@ fun HomeScreen(
 }
 
 @Composable
+fun ServicePriceItem(service: Service) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFDF9F5)),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.LightGray),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(service.name, fontWeight = FontWeight.Bold, color = Color(0xFF3D2314))
+                Text(service.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+            Text(
+                text = "RD$${service.price}",
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF3D2314),
+                fontSize = 16.sp
+            )
+        }
+    }
+}
+
+@Composable
 fun SummaryStat(label: String, value: String) {
     Column {
         Text(text = value, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -210,9 +309,15 @@ fun AppointmentItem(appointment: Appointment) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = appointment.petName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(
-                    text = appointment.services.joinToString(", ") { it.name },
+                    text = appointment.services.joinToString(", ") { it.name }.ifEmpty { "Sin servicios" },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Total: RD$${appointment.totalPrice}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF3D2314),
+                    fontWeight = FontWeight.Bold
                 )
             }
             
@@ -234,21 +339,28 @@ fun AppointmentItem(appointment: Appointment) {
 
 @Composable
 fun QuickActionsGrid(onActionClick: (QuickAction) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            QuickActionButton(
-                icon = Icons.Default.Add,
-                label = "Registrar Perro",
-                modifier = Modifier.weight(1f),
-                onClick = { onActionClick(QuickAction.REGISTER_PET) }
-            )
-            QuickActionButton(
-                icon = Icons.Default.AttachMoney,
-                label = "Cobrar",
-                modifier = Modifier.weight(1f),
-                onClick = { onActionClick(QuickAction.BILLING) }
-            )
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        QuickActionButton(
+            icon = Icons.Default.Pets,
+            label = "Mascotas",
+            modifier = Modifier.weight(1f),
+            onClick = { onActionClick(QuickAction.PET_LIST) }
+        )
+        QuickActionButton(
+            icon = Icons.Default.AttachMoney,
+            label = "Cobrar",
+            modifier = Modifier.weight(1f),
+            onClick = { onActionClick(QuickAction.BILLING) }
+        )
+        QuickActionButton(
+            icon = Icons.AutoMirrored.Filled.ListAlt,
+            label = "Servicios",
+            modifier = Modifier.weight(1f),
+            onClick = { onActionClick(QuickAction.SERVICES) }
+        )
     }
 }
 
@@ -280,6 +392,7 @@ fun PawBottomBar(
     onNavigateToPets: () -> Unit,
     onNavigateToProduct: () -> Unit,
     onNavigateToAppointments: () -> Unit,
+    onNavigateToPaymentList: () -> Unit,
     currentRoute: String
 ) {
     NavigationBar(
@@ -305,16 +418,16 @@ fun PawBottomBar(
             onClick = onNavigateToProduct
         )
         NavigationBarItem(
+            icon = { Icon(Icons.Default.Payments, contentDescription = null) },
+            label = { Text("Cobros") },
+            selected = currentRoute == "payment_list",
+            onClick = onNavigateToPaymentList
+        )
+        NavigationBarItem(
             icon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
             label = { Text("Citas") },
             selected = currentRoute == "appointment_list",
             onClick = onNavigateToAppointments
-        )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            label = { Text("Config") },
-            selected = currentRoute == "settings",
-            onClick = { }
         )
     }
 }
