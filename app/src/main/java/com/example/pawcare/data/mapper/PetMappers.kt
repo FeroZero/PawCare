@@ -6,27 +6,27 @@ import com.example.pawcare.domain.model.Pet
 
 fun PetDto.toPet(): Pet {
     return Pet(
-        id = id,
-        name = name,
-        breed = breed,
-        age = age,
+        id = id ?: "",
+        name = name ?: "Sin nombre",
+        breed = breed ?: "Desconocida",
+        age = age ?: 0,
         photoUrl = photoUrl,
-        createdAt = createdAt,
         ownerId = owner?.id ?: "",
-        ownerName = owner?.fullName ?: ""
+        ownerName = owner?.fullName ?: "",
+        createdAt = createdAt ?: ""
     )
 }
 
 fun PetDto.toEntity(): PetEntity {
     return PetEntity(
-        id = id,
-        name = name,
-        breed = breed,
-        age = age,
+        id = id ?: "",
+        name = name ?: "Sin nombre",
+        breed = breed ?: "Desconocida",
+        age = age ?: 0,
         photoUrl = photoUrl,
         ownerId = owner?.id ?: "",
         ownerName = owner?.fullName ?: "",
-        createdAt = createdAt
+        createdAt = createdAt ?: ""
     )
 }
 

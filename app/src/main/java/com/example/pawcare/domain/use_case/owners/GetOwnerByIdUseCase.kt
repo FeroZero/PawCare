@@ -9,5 +9,5 @@ import javax.inject.Inject
 class GetOwnerByIdUseCase @Inject constructor(
     private val repository: OwnerRepository
 ) {
-    operator fun invoke(id: String): Flow<Resource<Owner>> = repository.getOwnerById(id)
+    suspend operator fun invoke(id: String): Resource<Owner> = repository.getOwnerById(id)
 }

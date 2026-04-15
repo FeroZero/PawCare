@@ -1,7 +1,10 @@
 package com.example.pawcare.presentation.register
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pawcare.domain.model.Pet
+import com.example.pawcare.domain.model.Owner
 import com.example.pawcare.domain.repository.OwnerRepository
 import com.example.pawcare.domain.repository.PetRepository
 import com.example.pawcare.domain.util.Resource
@@ -17,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PetRegisterViewModel @Inject constructor(
     private val ownerRepository: OwnerRepository,
-    private val petRepository: PetRepository
+    private val petRepository: PetRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PetRegisterState())
@@ -25,6 +29,56 @@ class PetRegisterViewModel @Inject constructor(
 
     private val _effect = MutableSharedFlow<PetRegisterEffect>()
     val effect = _effect.asSharedFlow()
+
+    init {
+        // Obtenemos el ID si venimos de la pantalla de Perfil (Modo Edición)
+        val petId: String? = savedStateHandle["petId"]
+        if (petId != null) {
+            loadPetData(petId)
+        }
+    }
+
+    private fun loadPetData(id: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(petId = id, isLoading = true) }
+
+            // 1. Buscamos la mascota en el repositorio
+            val petResult = petRepository.getPetById(id)
+
+            if (petResult is Resource.Success) {
+                val pet = petResult.data ?: return@launch
+
+                // ACTUALIZACIÓN INICIAL: Guardamos los datos del perro y el ID del dueño
+                _state.update { it.copy(
+                    petId = pet.id,
+                    ownerId = pet.ownerId, // <--- ESTO ES LO QUE TE FALTABA
+                    name = pet.name,
+                    breed = pet.breed,
+                    age = pet.age.toString()
+                ) }
+
+                // 2. Buscamos al dueño usando el ID que acabamos de obtener del perro
+                val ownerResult = ownerRepository.getOwnerById(pet.ownerId)
+
+                if (ownerResult is Resource.Success) {
+                    val owner = ownerResult.data ?: return@launch
+
+                    // ACTUALIZACIÓN FINAL: Guardamos los datos del contacto
+                    _state.update { it.copy(
+                        isLoading = false,
+                        ownerFullName = owner.fullName,
+                        ownerPhone = owner.phone,
+                        ownerEmail = owner.email,
+                        ownerAddress = owner.address
+                    ) }
+                } else if (ownerResult is Resource.Error) {
+                    _state.update { it.copy(isLoading = false, error = ownerResult.message) }
+                }
+            } else if (petResult is Resource.Error) {
+                _state.update { it.copy(isLoading = false, error = petResult.message) }
+            }
+        }
+    }
 
     fun onEvent(event: PetRegisterEvent) {
         when (event) {
@@ -35,59 +89,94 @@ class PetRegisterViewModel @Inject constructor(
             is PetRegisterEvent.OnOwnerFullNameChanged -> _state.update { it.copy(ownerFullName = event.name) }
             is PetRegisterEvent.OnOwnerPhoneChanged -> _state.update { it.copy(ownerPhone = event.phone) }
             is PetRegisterEvent.OnOwnerEmailChanged -> _state.update { it.copy(ownerEmail = event.email) }
+            is PetRegisterEvent.OnOwnerAddressChanged -> _state.update { it.copy(ownerAddress = event.address) }
             PetRegisterEvent.SavePet -> savePet()
+            is PetRegisterEvent.OnDeletePet -> { /* No hace nada en esta pantalla */ }
         }
     }
 
     private fun savePet() {
         viewModelScope.launch {
-
             val currentState = _state.value
-            val ageInt = currentState.age.toIntOrNull() ?: 0
-            val weightDouble = currentState.weight.toDoubleOrNull() ?: 0.0
+            val petIdFromNav: String? = savedStateHandle["petId"]
 
-            if (ageInt <= 0 || weightDouble <= 0.0) {
-                _state.update { it.copy(error = "Por favor ingresa edad y peso válidos") }
+            // Validaciones básicas
+            val ageInt = currentState.age.toIntOrNull() ?: 0
+            if (ageInt <= 0 || currentState.name.isBlank()) {
+                _state.update { it.copy(error = "Por favor completa los datos correctamente") }
                 return@launch
             }
-            _state.update { it.copy(isLoading = true, error = null) }
-            
-            // 1. Create Owner first
-            val ownerResult = ownerRepository.createOwner(
-                fullName = _state.value.ownerFullName,
-                phone = _state.value.ownerPhone,
-                email = _state.value.ownerEmail,
-                address = "",
-                isVip = false
-            )
 
-            when (ownerResult) {
-                is Resource.Success -> {
-                    // 2. Create Pet with the new ownerId
-                    val petResult = petRepository.createPet(
-                        name = _state.value.name,
-                        breed = _state.value.breed,
-                        age = _state.value.age.toIntOrNull() ?: 0,
-                        photoUrl = null,
-                        ownerId = ownerResult.data.id
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            if (petIdFromNav != null) {
+                // --- MODO EDICIÓN ---
+                val petResult = petRepository.getPetById(petIdFromNav)
+                if (petResult is Resource.Success) {
+                    val currentPet = petResult.data!!
+
+                    // 1. Actualizamos el dueño primero
+                    val updateOwnerResult = ownerRepository.updateOwner(
+                        id = currentPet.ownerId,
+                        fullName = currentState.ownerFullName,
+                        phone = currentState.ownerPhone,
+                        email = currentState.ownerEmail,
+                        address = currentState.ownerAddress,
+                        isVip = false
                     )
 
-                    when (petResult) {
-                        is Resource.Success -> {
-                            _state.update { it.copy(isLoading = false, isSaved = true, savedPetId = petResult.data.id) }
-                            _effect.emit(PetRegisterEffect.NavigateToConfirmation(petResult.data.id))
-                        }
-                        is Resource.Error -> {
-                            _state.update { it.copy(isLoading = false, error = petResult.message) }
-                        }
-                        is Resource.Loading -> {}
+                    if (updateOwnerResult is Resource.Success) {
+                        // 2. Actualizamos la mascota
+                        val updatePetResult = petRepository.updatePet(
+                            id = petIdFromNav,
+                            name = currentState.name,
+                            breed = currentState.breed,
+                            age = ageInt,
+                            photoUrl = null,
+                            ownerId = currentPet.ownerId
+                        )
+                        handleResult(updatePetResult)
+                    } else if (updateOwnerResult is Resource.Error) { // CAMBIA EL 'else' POR ESTO
+                        _state.update { it.copy(isLoading = false, error = updateOwnerResult.message) }
                     }
                 }
-                is Resource.Error -> {
+            } else {
+                // --- MODO CREACIÓN ---
+                val ownerResult = ownerRepository.createOwner(
+                    fullName = currentState.ownerFullName,
+                    phone = currentState.ownerPhone,
+                    email = currentState.ownerEmail,
+                    address = currentState.ownerAddress,
+                    isVip = false
+                )
+
+                if (ownerResult is Resource.Success) {
+                    val petResult = petRepository.createPet(
+                        name = currentState.name,
+                        breed = currentState.breed,
+                        age = ageInt,
+                        photoUrl = null,
+                        ownerId = ownerResult.data!!.id
+                    )
+                    handleResult(petResult)
+                } else if (ownerResult is Resource.Error) { // CAMBIA EL 'else' POR ESTO
                     _state.update { it.copy(isLoading = false, error = ownerResult.message) }
                 }
-                is Resource.Loading -> {}
             }
+        }
+    }
+
+    private suspend fun handleResult(result: Resource<Pet>) {
+        when (result) {
+            is Resource.Success -> {
+                val id = result.data?.id ?: ""
+                _state.update { it.copy(isLoading = false, isSaved = true, savedPetId = id) }
+                _effect.emit(PetRegisterEffect.NavigateToConfirmation(id))
+            }
+            is Resource.Error -> {
+                _state.update { it.copy(isLoading = false, error = result.message) }
+            }
+            else -> {}
         }
     }
 }

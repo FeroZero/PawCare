@@ -13,5 +13,6 @@ sealed interface OwnerUiEvent {
     data class OnAddressChange(val value: String) : OwnerUiEvent
     data class OnVipStatusChange(val isVip: Boolean) : OwnerUiEvent
 
+    data class OnDeleteOwner(val ownerId: String) : OwnerUiEvent
     object OnSaveOwnerClick : OwnerUiEvent
 }

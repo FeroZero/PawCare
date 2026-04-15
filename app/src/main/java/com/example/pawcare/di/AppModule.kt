@@ -29,7 +29,10 @@ object AppModule {
             context,
             PawCareDatabase::class.java,
             "pawcare_db"
-        ).build()
+
+        )
+        .fallbackToDestructiveMigration()
+        .build()
     }
 
     @Provides

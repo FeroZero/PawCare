@@ -4,13 +4,17 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,13 +29,36 @@ import com.example.pawcare.ui.theme.*
 fun PetProfileScreen(
     pet: Pet,
     owner: Owner,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditClick: (String) -> Unit,
+    onDeleteClick: (String, String) -> Unit
 ) {
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(com.example.pawcare.ui.theme.Background)) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
-        // Header
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("¿Eliminar registro?") },
+            text = { Text("Se eliminará a ${pet.name} y a su dueño ${owner.fullName}") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDeleteClick(pet.id, owner.id)
+                }) { Text("Eliminar", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    Button(onClick = { showDeleteDialog = true }) { }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(com.example.pawcare.ui.theme.Background)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -47,12 +74,14 @@ fun PetProfileScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = "Editar",
-                tint = Accent,
-                modifier = Modifier.size(20.dp)
-            )
+            IconButton(onClick = { onEditClick(pet.id) }) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar",
+                    tint = Accent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
 
         Row(
@@ -88,37 +117,45 @@ fun PetProfileScreen(
                 Icon(Icons.Default.Person, contentDescription = null, tint = Accent)
                 Column(Modifier.padding(start = 12.dp)) {
                     Text(text = owner.fullName, fontWeight = FontWeight.Bold)
-                    Text(
-                        text = owner.phone,
-                        color = MutedText,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = owner.email,
-                        color = MutedText,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Text(text = owner.phone, color = MutedText, style = MaterialTheme.typography.bodySmall)
+                    Text(text = owner.email, color = MutedText, style = MaterialTheme.typography.bodySmall)
+                    if (owner.address.isNotBlank()) {
+                        Text(text = owner.address, color = MutedText, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Tabs
-        val tabs = listOf("Historial", "Servicios", "Productos")
         TabRow(
             selectedTabIndex = 0,
             containerColor = Color.Transparent,
             contentColor = Accent,
             divider = {}
         ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = index == 0,
-                    onClick = { },
-                    text = { Text(title) }
-                )
-            }
+            Tab(
+                selected = true,
+                onClick = { },
+                text = { Text("Historial") }
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = { showDeleteDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f))
+        ) {
+            Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+            Spacer(Modifier.width(8.dp))
+            Text("Eliminar Registro Completo", color = Color.Red, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -128,31 +165,18 @@ fun PetProfileScreen(
 private fun PetProfileScreenPreview() {
     PawCareTheme {
         val mockPet = Pet(
-            id = "1",
-            name = "Rocky",
-            breed = "Golden Retriever",
-            age = 3,
-            photoUrl = null,
-            ownerId = "owner123",
-            ownerName = "Carlos Méndez",
-            createdAt = "2023-08-01"
+            id = "1", name = "Rocky", breed = "Golden Retriever", age = 3,
+            photoUrl = null, ownerId = "owner123", ownerName = "Carlos Méndez", createdAt = "2023-08-01"
         )
-
         val mockOwner = Owner(
-            id = "owner123",
-            fullName = "Carlos Méndez",
-            phone = "+1 (849) 555-0192",
-            email = "carlos.mendez@example.com",
-            address = "Av. Central 456",
-            isVip = true,
-            createdAt = "2023-08-01",
-            pets = listOf(mockPet)
+            id = "owner123", fullName = "Carlos Méndez", phone = "+1 (849) 555-0192",
+            email = "carlos.mendez@example.com", address = "Av. Central 456", isVip = true,
+            createdAt = "2023-08-01", pets = listOf(mockPet)
         )
 
         PetProfileScreen(
-            pet = mockPet,
-            owner = mockOwner,
-            onBack = {}
+            pet = mockPet, owner = mockOwner, onBack = {}, onEditClick = {},
+            onDeleteClick = { _, _ -> }
         )
     }
 }

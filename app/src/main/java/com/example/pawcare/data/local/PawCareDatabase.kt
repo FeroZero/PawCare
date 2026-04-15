@@ -13,7 +13,7 @@ import com.example.pawcare.data.local.entity.*
         AppointmentEntity::class,
         ProductEntity::class
     ],
-    version = 1,
+    version = 6,
     exportSchema = false
 )
 abstract class PawCareDatabase : RoomDatabase() {

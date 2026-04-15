@@ -172,6 +172,12 @@ fun PetRegisterScreen(
                 onValueChange = { viewModel.onEvent(PetRegisterEvent.OnOwnerEmailChanged(it)) },
                 placeholder = "Email"
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            PawTextField(
+                value = state.ownerAddress,
+                onValueChange = {viewModel.onEvent(PetRegisterEvent.OnOwnerAddressChanged(it)) },
+                placeholder = "Dirección"
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
