@@ -43,27 +43,24 @@ class OwnerRepositoryImpl @Inject constructor(
         )
     }.flowOn(Dispatchers.IO)
 
-    override fun getOwnerById(id: String): Flow<Resource<Owner>> = flow {
-        emit(Resource.Loading())
-
+    override suspend fun getOwnerById(id: String): Resource<Owner> {
         val result = safeApiCall { api.getOwnerById(id) }
 
-        result.onSuccessSuspend { dto ->
-            ownerDao.upsertOwners(listOf(dto.toEntity()))
-        }.onFailureSuspend { errorMessage ->
-            emit(Resource.Error(errorMessage))
+        if (result is Resource.Success) {
+            ownerDao.upsertOwners(listOf(result.data.toEntity()))
         }
 
-        emitAll(
-            ownerDao.getOwnerById(id).map { entity ->
-                if (entity != null) {
-                    Resource.Success(entity.toOwner())
-                } else {
-                    Resource.Error("Dueño no encontrado")
-                }
+        val localEntity = ownerDao.getOwnerById(id).firstOrNull()
+
+        return if (localEntity != null) {
+            Resource.Success(localEntity.toOwner())
+        } else {
+            when (result) {
+                is Resource.Error -> Resource.Error(result.message)
+                else -> Resource.Error("Dueño no encontrado")
             }
-        )
-    }.flowOn(Dispatchers.IO)
+        }
+    }
 
     override fun getOwnerPets(ownerId: String): Flow<Resource<List<Pet>>> = flow {
         emit(Resource.Loading())
@@ -104,20 +101,35 @@ class OwnerRepositoryImpl @Inject constructor(
             is Resource.Loading -> Resource.Loading()
         }
     }
-    override suspend fun deleteOwner(id: String): Resource<Unit> {
-        val result = safeApiCall { api.deleteOwner(id) }
+
+    override suspend fun updateOwner(
+        id: String,
+        fullName: String,
+        phone: String,
+        email: String,
+        address: String,
+        isVip: Boolean
+    ): Resource<Owner> {
+        val result = safeApiCall {
+            api.updateOwner(id, CreateOwnerRequest(fullName, phone, email, address, isVip))
+        }
 
         return when (result) {
             is Resource.Success -> {
-                ownerDao.deleteOwner(id)
-                Resource.Success(Unit)
+                ownerDao.upsertOwners(listOf(result.data.toEntity()))
+                Resource.Success(result.data.toOwner())
             }
-            is Resource.Error -> {
-                Resource.Error(result.message)
-            }
-            is Resource.Loading -> {
-                Resource.Loading()
-            }
+            is Resource.Error -> Resource.Error(result.message)
+            is Resource.Loading -> Resource.Loading()
         }
+    }
+
+    override suspend fun deleteOwner(id: String): Resource<Unit> {
+        val result = safeApiCall { api.deleteOwner(id) }
+
+        if (result is Resource.Success || result is Resource.Error) {
+            ownerDao.deleteOwner(id)
+        }
+        return Resource.Success(Unit)
     }
 }

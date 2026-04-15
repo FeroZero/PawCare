@@ -9,6 +9,9 @@ import com.example.pawcare.domain.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.lifecycle.SavedStateHandle
+import com.example.pawcare.domain.use_case.appointments.DeleteAppointmentUseCase
+import com.example.pawcare.domain.use_case.appointments.GetAppointmentsUseCase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -17,10 +20,13 @@ import javax.inject.Inject
 class ScheduleAppointmentViewModel @Inject constructor(
     private val petRepository: PetRepository,
     private val serviceRepository: ServiceRepository,
-    private val createAppointmentUseCase: CreateAppointmentUseCase
+    private val createAppointmentUseCase: CreateAppointmentUseCase,
+    private val deleteAppointmentUseCase: DeleteAppointmentUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ScheduleAppointmentUiState())
+    private val appointmentId: String? = savedStateHandle.get<String>("appointmentId")
     val state = _state.asStateFlow()
 
     private val _effect = MutableSharedFlow<ScheduleAppointmentSideEffect>()
@@ -33,7 +39,7 @@ class ScheduleAppointmentViewModel @Inject constructor(
 
     private fun loadData() {
         _state.update { it.copy(isLoading = true) }
-        
+
         combine(
             petRepository.getPets(),
             serviceRepository.getServices()
@@ -94,11 +100,15 @@ class ScheduleAppointmentViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            
+            _state.update { it.copy(isLoading = true) }
+
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             val dateStr = currentState.selectedDate.format(formatter)
-            
+
+            if (appointmentId != null) {
+                deleteAppointmentUseCase(appointmentId)
+            }
+
             val result = createAppointmentUseCase(
                 date = dateStr,
                 timeSlot = currentState.selectedTimeSlot,

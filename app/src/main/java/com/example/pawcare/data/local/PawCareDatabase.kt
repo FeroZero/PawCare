@@ -14,7 +14,7 @@ import com.example.pawcare.data.local.entity.*
         ProductEntity::class,
         PaymentEntity::class
     ],
-    version = 3, // Se incrementó la versión para resolver el error de integridad
+    version = 8,
     exportSchema = false
 )
 abstract class PawCareDatabase : RoomDatabase() {

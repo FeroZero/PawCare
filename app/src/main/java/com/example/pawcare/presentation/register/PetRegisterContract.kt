@@ -1,8 +1,11 @@
 package com.example.pawcare.presentation.register
 
 import com.example.pawcare.domain.model.Owner
+import com.example.pawcare.presentation.components.pets.PetUiEvent
 
 data class PetRegisterState(
+    val petId: String? = null,
+    val ownerId: String? = null,
     val name: String = "",
     val breed: String = "",
     val age: String = "",
@@ -10,6 +13,7 @@ data class PetRegisterState(
     val ownerFullName: String = "",
     val ownerPhone: String = "",
     val ownerEmail: String = "",
+    val ownerAddress: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSaved: Boolean = false,
@@ -24,6 +28,9 @@ sealed class PetRegisterEvent {
     data class OnOwnerFullNameChanged(val name: String) : PetRegisterEvent()
     data class OnOwnerPhoneChanged(val phone: String) : PetRegisterEvent()
     data class OnOwnerEmailChanged(val email: String) : PetRegisterEvent()
+    data class OnOwnerAddressChanged(val address: String) : PetRegisterEvent()
+
+    data class OnDeletePet(val id: String) : PetRegisterEvent()
     object SavePet : PetRegisterEvent()
 }
 

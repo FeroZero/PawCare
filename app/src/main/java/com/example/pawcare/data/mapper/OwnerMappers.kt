@@ -6,26 +6,26 @@ import com.example.pawcare.domain.model.Owner
 
 fun OwnerDto.toOwner(): Owner {
     return Owner(
-        id = id,
-        fullName = fullName,
-        phone = phone,
-        email = email,
-        address = address,
-        isVip = isVip,
-        createdAt = createdAt,
+        id = id ?: "",
+        fullName = fullName ?: "Sin nombre",
+        phone = phone ?: "",
+        email = email ?: "", // Si la API manda null, ponemos ""
+        address = address ?: "",
+        isVip = isVip ?: false,
+        createdAt = createdAt ?: "",
         pets = pets?.map { it.toPet() } ?: emptyList()
     )
 }
 
 fun OwnerDto.toEntity(): OwnerEntity {
     return OwnerEntity(
-        id = id,
-        fullName = fullName,
-        phone = phone,
-        email = email,
-        address = address,
-        isVip = isVip,
-        createdAt = createdAt
+        id = id ?: "",
+        fullName = fullName ?: "Sin nombre",
+        phone = phone ?: "",
+        email = email ?: "", // <--- ESTO CORRIGE EL CRASH (Parameter email is null)
+        address = address ?: "",
+        isVip = isVip ?: false,
+        createdAt = createdAt ?: ""
     )
 }
 

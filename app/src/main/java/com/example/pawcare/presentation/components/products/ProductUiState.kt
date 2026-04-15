@@ -8,6 +8,7 @@ data class ProductUiState(
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
+    val productId: String? = null,
     val name: String = "",
     val price: String = "",
     val category: String = "",

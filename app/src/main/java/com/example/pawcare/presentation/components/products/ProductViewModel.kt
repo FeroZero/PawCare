@@ -1,16 +1,12 @@
 package com.example.pawcare.presentation.components.products
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pawcare.domain.model.Product
 import com.example.pawcare.domain.use_case.products.CreateProductUseCase
-import com.example.pawcare.domain.use_case.products.DeleteProductsUseCase // Importa el nombre correcto
+import com.example.pawcare.domain.use_case.products.DeleteProductsUseCase
 import com.example.pawcare.domain.use_case.products.GetProductsUseCase
 import com.example.pawcare.domain.util.Resource
-import com.example.pawcare.presentation.screens.product.InventoryListScreen
-import com.example.pawcare.ui.theme.PawCareTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +20,8 @@ import javax.inject.Inject
 class ProductViewModel @Inject constructor(
     private val getProductsUseCase: GetProductsUseCase,
     private val createProductUseCase: CreateProductUseCase,
-    private val deleteProductUseCase: DeleteProductsUseCase
+    private val deleteProductUseCase: DeleteProductsUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProductUiState())
@@ -32,21 +29,55 @@ class ProductViewModel @Inject constructor(
 
     init {
         loadProducts()
+
+        // Observamos cuando los productos llegan para auto-seleccionar el que queremos editar
+        viewModelScope.launch {
+            state.collect { currentState ->
+                val productId = savedStateHandle.get<String>("productId")
+                if (productId != null && currentState.productId == null && currentState.products.isNotEmpty()) {
+                    loadProductById(productId)
+                }
+            }
+        }
+    }
+
+    private fun loadProductById(id: String) {
+        val product = _state.value.products.find { it.id == id }
+
+        if (product != null) {
+            _state.update { it.copy(
+                productId = product.id,
+                name = product.name,
+                category = product.category,
+                price = product.price.toString(),
+                stock = product.stock.toString(),
+                imageUrl = product.imageUrl,
+                isLoading = false,
+                error = null
+            ) }
+        } else {
+            _state.update { it.copy(isLoading = false) }
+        }
     }
 
     fun onEvent(event: ProductUiEvent) {
         when (event) {
             is ProductUiEvent.OnEditProductClick -> {
                 _state.update { it.copy(
+                    productId = event.product.id,
                     name = event.product.name,
                     price = event.product.price.toString(),
                     category = event.product.category,
                     stock = event.product.stock.toString(),
+                    imageUrl = event.product.imageUrl,
+                    saveSuccess = false,
                     error = null
                 ) }
             }
+
             is ProductUiEvent.OnClearForm -> {
                 _state.update { it.copy(
+                    productId = null,
                     name = "",
                     price = "",
                     category = "",
@@ -59,10 +90,6 @@ class ProductViewModel @Inject constructor(
 
             is ProductUiEvent.OnDeleteProduct -> {
                 deleteProduct(event.id)
-            }
-
-            ProductUiEvent.OnClearForm -> {
-                _state.update { it.copy(name = "", price = "", category = "", stock = "", saveSuccess = false) }
             }
 
             is ProductUiEvent.OnSearchQueryChange -> {
@@ -98,10 +125,10 @@ class ProductViewModel @Inject constructor(
             }
 
             is ProductUiEvent.OnProductClick -> {
+
             }
         }
     }
-
 
     private fun loadProducts(category: String? = null) {
         getProductsUseCase(category).onEach { result ->
@@ -114,16 +141,13 @@ class ProductViewModel @Inject constructor(
                             error = null
                         )
                     }
-
                     is Resource.Error -> {
-                        // Eliminamos la llamada redundante a _state.update aquí
                         currentState.copy(
                             products = result.data ?: currentState.products,
                             isLoading = false,
                             error = result.message
                         )
                     }
-
                     is Resource.Loading -> {
                         currentState.copy(
                             isLoading = true,
@@ -137,8 +161,8 @@ class ProductViewModel @Inject constructor(
 
     private fun saveProduct() {
         val currentState = _state.value
+        val productIdToEdit = currentState.productId
 
-        // Validaciones básicas antes de enviar
         val priceDouble = currentState.price.toDoubleOrNull() ?: 0.0
         val stockInt = currentState.stock.toIntOrNull() ?: 0
 
@@ -150,6 +174,14 @@ class ProductViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true, error = null) }
 
+            if (productIdToEdit != null) {
+                try {
+                    deleteProductUseCase(productIdToEdit)
+                } catch (e: Exception) {
+                    println("DEBUG: Error de borrado ignorado: ${e.message}")
+                }
+            }
+
             val result = createProductUseCase(
                 name = currentState.name,
                 category = currentState.category,
@@ -160,21 +192,22 @@ class ProductViewModel @Inject constructor(
 
             when (result) {
                 is Resource.Success -> {
-                    // Importante: saveSuccess disparará el onBack() en la Screen
+                    println("DEBUG: Proceso completado con éxito.")
                     _state.update { it.copy(
                         isSaving = false,
-                        saveSuccess = true
+                        saveSuccess = true,
+                        productId = null
                     ) }
+                    loadProducts()
                 }
-
                 is Resource.Error -> {
+                    println("DEBUG: Error en la creación final: ${result.message}")
                     _state.update { it.copy(
                         isSaving = false,
-                        error = result.message
+                        error = "Error al guardar el producto: ${result.message}"
                     ) }
                 }
-
-                is Resource.Loading -> { }
+                else -> {}
             }
         }
     }

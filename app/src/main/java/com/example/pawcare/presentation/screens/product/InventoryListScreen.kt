@@ -6,9 +6,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -31,6 +33,8 @@ fun InventoryListScreen(
     state: ProductUiState,
     onEvent: (ProductUiEvent) -> Unit,
     onNavigateToForm: () -> Unit,
+    onNavigateToCatalogue: () -> Unit,
+    onBack: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToPets: () -> Unit,
     onNavigateToAppointments: () -> Unit,
@@ -68,7 +72,6 @@ fun InventoryListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    onEvent(ProductUiEvent.OnClearForm)
                     onNavigateToForm()
                 },
                 containerColor = Accent,
@@ -95,11 +98,36 @@ fun InventoryListScreen(
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
-            Text(
-                text = "Gestión de Inventario",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = TextPrimary)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Gestión de Inventario",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Botón de Catálogo Preview
+            Button(
+                onClick = onNavigateToCatalogue,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Accent.copy(alpha = 0.1f), contentColor = Accent),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Catálogo Preview", fontWeight = FontWeight.Bold)
+            }
 
             OutlinedTextField(
                 value = state.searchQuery,
@@ -121,7 +149,6 @@ fun InventoryListScreen(
                         product = product,
                         onEdit = {
                             onEvent(ProductUiEvent.OnEditProductClick(product))
-                            onNavigateToForm()
                         },
                         onDelete = {
                             productToDelete = product
@@ -170,5 +197,36 @@ fun InventoryItem(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Gestión Inventario")
+@Composable
+private fun InventoryListScreenPreview() {
+    PawCareTheme {
+        val mockProducts = listOf(
+            Product("1", "Collar Cuero Premium", "Accesorios", 450.0, null, 12),
+            Product("2", "Shampoo Hidratante", "Higiene", 280.0, null, 3),
+            Product("3", "Juguete Cuerda XL", "Juguetes", 150.0, null, 25),
+            Product("4", "Cama Ortopédica", "Muebles", 1200.0, null, 5)
+        )
+
+        val state = ProductUiState(
+            products = mockProducts,
+            isLoading = false,
+            searchQuery = ""
+        )
+
+        InventoryListScreen(
+            state = state,
+            onEvent = {},
+            onNavigateToForm = {},
+            onNavigateToCatalogue = {},
+            onBack = {},
+            onNavigateToHome = {},
+            onNavigateToPets = {},
+            onNavigateToAppointments = {},
+            onNavigateToPaymentList = {}
+        )
     }
 }

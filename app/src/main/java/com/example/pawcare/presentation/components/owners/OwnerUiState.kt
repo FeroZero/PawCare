@@ -7,6 +7,7 @@ data class OwnerUiState(
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
+    val selectedOwner: Owner? = null,
 
     val fullName: String = "",
     val phone: String = "",

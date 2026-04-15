@@ -54,7 +54,7 @@ fun PetRegisterScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Nuevo Registro", fontWeight = FontWeight.Bold) },
+                title = { Text("Registro", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -171,6 +171,12 @@ fun PetRegisterScreen(
                 value = state.ownerEmail,
                 onValueChange = { viewModel.onEvent(PetRegisterEvent.OnOwnerEmailChanged(it)) },
                 placeholder = "Email"
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            PawTextField(
+                value = state.ownerAddress,
+                onValueChange = {viewModel.onEvent(PetRegisterEvent.OnOwnerAddressChanged(it)) },
+                placeholder = "Dirección"
             )
 
             Spacer(modifier = Modifier.height(32.dp))

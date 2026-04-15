@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.pawcare.data.local.entity.AppointmentEntity
+import com.example.pawcare.data.local.entity.ServiceEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -18,6 +19,9 @@ interface AppointmentDao {
 
     @Query("SELECT * FROM appointments WHERE petId = :petId")
     fun getAppointmentsByPetId(petId: String): Flow<List<AppointmentEntity>>
+
+    @Query("SELECT * FROM services WHERE id IN (:ids)")
+    suspend fun getServicesByIds(ids: List<String>): List<ServiceEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAppointments(appointments: List<AppointmentEntity>)

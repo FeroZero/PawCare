@@ -11,6 +11,7 @@ import com.example.pawcare.domain.repository.PetRepository
 import com.example.pawcare.domain.util.Resource
 import com.example.pawcare.domain.util.networkBoundResource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -27,13 +28,24 @@ class PetRepositoryImpl @Inject constructor(
         }
     )
 
-    override fun getPetById(id: String): Flow<Resource<Pet>> = networkBoundResource(
-        query = { petDao.getPetById(id).map { it?.toPet() ?: Pet("", "", "", 0, null, "", "", "") } },
-        fetch = { api.getPetById(id).body()!! },
-        saveFetchResult = { dto ->
-            petDao.upsertPets(listOf(dto.toEntity()))
+    override suspend fun getPetById(id: String): Resource<Pet> {
+        val result = safeApiCall { api.getPetById(id) }
+
+        if (result is Resource.Success) {
+            petDao.upsertPets(listOf(result.data.toEntity()))
         }
-    )
+
+        val localPet = petDao.getPetById(id).firstOrNull()
+
+        return if (localPet != null) {
+            Resource.Success(localPet.toPet())
+        } else {
+            when (result) {
+                is Resource.Error -> Resource.Error(result.message)
+                else -> Resource.Error("Mascota no encontrada")
+            }
+        }
+    }
 
     override fun searchPets(query: String): Flow<Resource<List<Pet>>> = networkBoundResource(
         query = { petDao.searchPets(query).map { entities -> entities.map { it.toPet() } } },
@@ -88,13 +100,10 @@ class PetRepositoryImpl @Inject constructor(
         // Especificamos <Unit> explícitamente para ayudar al compilador
         val result = safeApiCall<Unit> { api.deletePet(id) }
 
-        return when (result) {
-            is Resource.Success -> {
-                petDao.deletePets(id)
-                Resource.Success(Unit)
-            }
-            is Resource.Error -> Resource.Error(result.message)
-            is Resource.Loading -> Resource.Loading()
+        if (result is Resource.Success || result is Resource.Error) {
+            petDao.deletePets(id)
         }
+        return Resource.Success(Unit)
     }
 }
+
