@@ -19,6 +19,10 @@ import com.example.pawcare.presentation.components.pets.PetViewModel
 import com.example.pawcare.presentation.components.pets.PetUiEvent
 import com.example.pawcare.presentation.components.products.ProductViewModel
 import com.example.pawcare.presentation.register.PetRegisterScreen
+import com.example.pawcare.presentation.screens.appointments.AppointmentConfirmationScreen
+import com.example.pawcare.presentation.screens.appointments.ScheduleAppointmentScreen
+import com.example.pawcare.presentation.screens.appointments.AppointmentListScreen
+import com.example.pawcare.presentation.components.appointments.AppointmentViewModel
 import com.example.pawcare.presentation.screens.product.InventoryListScreen
 import com.example.pawcare.presentation.screens.product.ProductFormScreen
 
@@ -31,7 +35,6 @@ fun NavGraph(
         navController = navController,
         startDestination = Screen.Login.route
     ) {
-        // --- LOGIN ---
         composable(Screen.Login.route) {
             LoginScreen(
                 onNavigateToHome = {
@@ -42,63 +45,81 @@ fun NavGraph(
             )
         }
 
-        // --- DASHBOARD ---
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToRegisterPet = { navController.navigate(Screen.PetRegister.route) },
                 onNavigateToPetList = { navController.navigate(Screen.PetList.route) },
-                onNavigateToProduct = {navController.navigate(Screen.ProductList.route)},
-                onNavigateToAppointments = { /* TODO */ },
+                onNavigateToProduct = { navController.navigate(Screen.ProductList.route) },
+                onNavigateToAppointments = { navController.navigate(Screen.PetList.route) },
                 onNavigateToBilling = { /* TODO */ }
             )
         }
 
-        // --- LISTA DE MASCOTAS ---
-        composable(Screen.PetList.route) {
-            val viewModel: PetViewModel = hiltViewModel()
-            val state by viewModel.state.collectAsState()
-
-            PetListScreen(
-                state = state,
-                onEvent = { event ->
-                    when (event) {
-                        is PetUiEvent.OnPetClick -> {
-                            navController.navigate(Screen.PetProfile.createRoute(event.petId))
-                        }
-                        else -> viewModel.onEvent(event)
+        composable(Screen.ScheduleAppointment.route) {
+            ScheduleAppointmentScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToRegisterPet = { navController.navigate(Screen.PetRegister.route) },
+                onNavigateToConfirmation = { date, time, pet, service ->
+                    navController.navigate(Screen.AppointmentConfirmation.createRoute(date, time, pet, service)) {
+                        popUpTo(Screen.ScheduleAppointment.route) { inclusive = true }
                     }
                 },
-                onNavigateToRegister = { navController.navigate(Screen.PetRegister.route) }
+                onNavigateToHome = { navController.navigate(Screen.Home.route) },
+                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
+                onNavigateToProduct = { navController.navigate(Screen.ProductList.route) },
+                onNavigateToAppointments = { navController.navigate(Screen.PetList.route) }
             )
         }
 
         composable(
-            route = Screen.PetProfile.route,
-            arguments = listOf(navArgument("petId") { type = NavType.StringType })
+            route = Screen.AppointmentConfirmation.route,
+            arguments = listOf(
+                navArgument("date") { type = NavType.StringType },
+                navArgument("time") { type = NavType.StringType },
+                navArgument("petName") { type = NavType.StringType },
+                navArgument("serviceName") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
-            val petId = backStackEntry.arguments?.getString("petId") ?: ""
-            val viewModel: PetViewModel = hiltViewModel()
-            val state by viewModel.state.collectAsState()
+            val date = backStackEntry.arguments?.getString("date") ?: ""
+            val time = backStackEntry.arguments?.getString("time") ?: ""
+            val petName = backStackEntry.arguments?.getString("petName") ?: ""
+            val serviceName = backStackEntry.arguments?.getString("serviceName") ?: ""
 
-            val pet = state.pets.find { it.id == petId }
-
-            pet?.let {
-                PetProfileScreen(
-                    pet = it,
-                    owner = com.example.pawcare.domain.model.Owner(
-                        id = it.ownerId,
-                        fullName = it.ownerName,
-                        phone = "Consultar historial",
-                        email = "",
-                        address = "",
-                        isVip = false,
-                        createdAt = ""
-                    ),
-                    onBack = { navController.popBackStack() }
-                )
-            }
+            AppointmentConfirmationScreen(
+                date = date,
+                time = time,
+                petName = petName,
+                serviceName = serviceName,
+                onViewAppointments = { navController.navigate(Screen.PetList.route) },
+                onScheduleAnother = {
+                    navController.navigate(Screen.ScheduleAppointment.route) {
+                        popUpTo(Screen.Home.route)
+                    }
+                },
+                onGoToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
+        composable(Screen.PetList.route) {
+            val viewModel: AppointmentViewModel = hiltViewModel()
+            val state by viewModel.state.collectAsState()
+            AppointmentListScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                onNavigateToEdit = { /* TODO */ },
+                onNavigateToSchedule = { navController.navigate(Screen.ScheduleAppointment.route) },
+                onNavigateToHome = { navController.navigate(Screen.Home.route) },
+                onNavigateToPets = { /* Already here */ },
+                onNavigateToProducts = { navController.navigate(Screen.ProductList.route) }
+            )
+        }
+
+        // --- MASCOTAS ---
+        // (Maintaining existing Pet screens)
         composable(Screen.PetRegister.route) {
             PetRegisterScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -126,30 +147,17 @@ fun NavGraph(
                 petRepository = petRepository
             )
         }
-        // --- GESTIÓN DE INVENTARIO (LISTA) ---
+        
         composable(Screen.ProductList.route) {
             val viewModel: ProductViewModel = hiltViewModel()
             val state by viewModel.state.collectAsState()
-
             InventoryListScreen(
-                state = state,
-                onEvent = viewModel::onEvent,
-                onNavigateToForm = {
-                    navController.navigate("product_form")
-                }
-            )
-        }
-
-        // --- FORMULARIO DE PRODUCTO (CREAR/EDITAR) ---
-        composable("product_form") {
-            val viewModel: ProductViewModel = hiltViewModel()
-            val state by viewModel.state.collectAsState()
-
-            ProductFormScreen(
-                state = state,
-                onEvent = viewModel::onEvent,
-                onBack = { navController.popBackStack() },
-                isEdit = state.name.isNotEmpty()
+                state = state, 
+                onEvent = viewModel::onEvent, 
+                onNavigateToForm = { navController.navigate("product_form") },
+                onNavigateToHome = { navController.navigate(Screen.Home.route) },
+                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
+                onNavigateToAppointments = { navController.navigate(Screen.PetList.route) }
             )
         }
     }
