@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pawcare.domain.model.Product
 import com.example.pawcare.presentation.components.products.ProductUiEvent
 import com.example.pawcare.presentation.components.products.ProductUiState
+import com.example.pawcare.presentation.home.PawBottomBar
 import com.example.pawcare.presentation.screens.pet.PawCareCard
 import com.example.pawcare.ui.theme.*
 
@@ -29,7 +30,10 @@ import com.example.pawcare.ui.theme.*
 fun InventoryListScreen(
     state: ProductUiState,
     onEvent: (ProductUiEvent) -> Unit,
-    onNavigateToForm: () -> Unit
+    onNavigateToForm: () -> Unit,
+    onNavigateToHome: () -> Unit,
+    onNavigateToPets: () -> Unit,
+    onNavigateToAppointments: () -> Unit
 ) {
     var productToDelete by remember { mutableStateOf<Product?>(null) }
 
@@ -63,7 +67,7 @@ fun InventoryListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    onEvent(ProductUiEvent.OnClearForm) // Limpiamos el formulario para nuevo producto
+                    onEvent(ProductUiEvent.OnClearForm)
                     onNavigateToForm()
                 },
                 containerColor = Accent,
@@ -71,6 +75,15 @@ fun InventoryListScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
             }
+        },
+        bottomBar = {
+            PawBottomBar(
+                onNavigateToHome = onNavigateToHome,
+                onNavigateToPets = onNavigateToPets,
+                onNavigateToProduct = { /* Ya estamos aquí */ },
+                onNavigateToAppointments = onNavigateToAppointments,
+                currentRoute = "product_list"
+            )
         },
         containerColor = Background
     ) { padding ->
@@ -155,30 +168,5 @@ fun InventoryItem(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, name = "Gestión Inventario")
-@Composable
-private fun InventoryListScreenPreview() {
-    PawCareTheme {
-        val mockProducts = listOf(
-            Product("1", "Collar Cuero Premium", "Accesorios", 450.0, null, 12),
-            Product("2", "Shampoo Hidratante", "Higiene", 280.0, null, 3),
-            Product("3", "Juguete Cuerda XL", "Juguetes", 150.0, null, 25),
-            Product("4", "Cama Ortopédica", "Muebles", 1200.0, null, 5)
-        )
-
-        val state = ProductUiState(
-            products = mockProducts,
-            isLoading = false,
-            searchQuery = ""
-        )
-
-        InventoryListScreen(
-            state = state,
-            onEvent = {},
-            onNavigateToForm = {}
-        )
     }
 }
