@@ -9,5 +9,5 @@ import javax.inject.Inject
 class GetPetByIdUseCase @Inject constructor(
     private val repository: PetRepository
 ) {
-    operator fun invoke(id: String): Flow<Resource<Pet>> = repository.getPetById(id)
+    suspend operator fun invoke(id: String): Resource<Pet> = repository.getPetById(id)
 }

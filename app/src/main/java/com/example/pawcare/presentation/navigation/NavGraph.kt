@@ -1,9 +1,13 @@
 package com.example.pawcare.presentation.navigation
 
+import androidx.activity.result.launch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,6 +15,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.pawcare.domain.repository.PaymentRepository
 import com.example.pawcare.domain.repository.PetRepository
+import com.example.pawcare.presentation.components.owners.OwnerUiEvent
+import com.example.pawcare.presentation.components.owners.OwnerViewModel
 import com.example.pawcare.presentation.home.HomeScreen
 import com.example.pawcare.presentation.login.LoginScreen
 import com.example.pawcare.presentation.register.PetConfirmationScreen
@@ -24,7 +30,10 @@ import com.example.pawcare.presentation.screens.appointments.ScheduleAppointment
 import com.example.pawcare.presentation.screens.appointments.AppointmentListScreen
 import com.example.pawcare.presentation.components.appointments.AppointmentViewModel
 import com.example.pawcare.presentation.screens.product.InventoryListScreen
+import com.example.pawcare.presentation.screens.product.ProductCatalogueScreen
 import com.example.pawcare.presentation.screens.product.ProductFormScreen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.example.pawcare.presentation.screens.appointments.PaymentDetailScreen
 import com.example.pawcare.presentation.screens.appointments.PaymentListScreen
 import com.example.pawcare.presentation.screens.appointments.PaymentListViewModel
@@ -54,6 +63,7 @@ fun NavGraph(
 
         composable(Screen.Home.route) {
             HomeScreen(
+
                 onNavigateToRegisterPet = { navController.navigate(Screen.PetRegister.route) },
                 onNavigateToPetList = { navController.navigate(Screen.PetList.route) },
                 onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
@@ -100,6 +110,7 @@ fun NavGraph(
             )
         }
 
+        // --- PERFIL DE MASCOTA ---
         composable(
             route = Screen.AppointmentConfirmation.route,
             arguments = listOf(
@@ -109,50 +120,69 @@ fun NavGraph(
                 navArgument("serviceName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val date = backStackEntry.arguments?.getString("date") ?: ""
-            val time = backStackEntry.arguments?.getString("time") ?: ""
-            val petName = backStackEntry.arguments?.getString("petName") ?: ""
-            val serviceName = backStackEntry.arguments?.getString("serviceName") ?: ""
+            val petId = backStackEntry.arguments?.getString("petId") ?: ""
 
-            AppointmentConfirmationScreen(
-                date = date,
-                time = time,
-                petName = petName,
-                serviceName = serviceName,
-                onViewAppointments = { navController.navigate(Screen.AppointmentList.route) },
-                onScheduleAnother = {
-                    navController.navigate(Screen.ScheduleAppointment.route) {
-                        popUpTo(Screen.Home.route)
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+            val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.PetList.route) }
+            val petViewModel: PetViewModel = hiltViewModel(parentEntry)
+            val ownerViewModel: OwnerViewModel = hiltViewModel()
+
+            val petState by petViewModel.state.collectAsState()
+            val ownerState by ownerViewModel.state.collectAsState()
+
+            val pet = petState.pets.find { it.id == petId }
+
+            LaunchedEffect(pet) {
+                pet?.let {
+                    ownerViewModel.onEvent(OwnerUiEvent.OnOwnerClick(it.ownerId))
+                }
+            }
+
+            pet?.let { petData ->
+                val realOwner = ownerState.selectedOwner
+
+                PetProfileScreen(
+                    pet = petData,
+                    owner = realOwner ?: com.example.pawcare.domain.model.Owner(
+                        id = petData.ownerId,
+                        fullName = petData.ownerName,
+                        phone = "Cargando...",
+                        email = "",
+                        address = "",
+                        isVip = false,
+                        createdAt = ""
+                    ),
+                    onBack = { navController.popBackStack() },
+                    onEditClick = { id ->
+                        navController.navigate("${Screen.PetRegister.route}?petId=$id")
+                    },
+                    onDeleteClick = { pId, oId ->
+                        scope.launch {
+                            petViewModel.onEvent(PetUiEvent.OnDeletePet(pId))
+
+                            delay(500)
+
+                            ownerViewModel.onEvent(OwnerUiEvent.OnDeleteOwner(oId))
+
+                            navController.popBackStack()
+                        }
                     }
-                },
-                onGoToHome = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
+                )
+            }
+        }
+
+        // --- REGISTRO / EDICIÓN DE MASCOTA ---
+        composable(
+            route = "${Screen.PetRegister.route}?petId={petId}",
+            arguments = listOf(
+                navArgument("petId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
-        }
-
-        composable(Screen.AppointmentList.route) {
-            val viewModel: AppointmentViewModel = hiltViewModel()
-            val state by viewModel.state.collectAsState()
-            AppointmentListScreen(
-                state = state,
-                onEvent = viewModel::onEvent,
-                onNavigateToEdit = { id -> 
-                    navController.navigate(Screen.ScheduleAppointment.createRoute(id)) 
-                },
-                onNavigateToSchedule = { navController.navigate(Screen.ScheduleAppointment.route) },
-                onNavigateToHome = { navController.navigate(Screen.Home.route) },
-                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
-                onNavigateToProducts = { navController.navigate(Screen.ProductList.route) },
-                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) },
-                onNavigateToAppointments = { /* Already here */ }
-            )
-        }
-
-        // --- MASCOTAS ---
-        composable(Screen.PetRegister.route) {
+        ) {
             PetRegisterScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToConfirmation = { petId ->
@@ -163,6 +193,7 @@ fun NavGraph(
             )
         }
 
+        // --- CONFIRMACIÓN ---
         composable(
             route = Screen.PetConfirmation.route,
             arguments = listOf(navArgument("petId") { type = NavType.StringType })
@@ -179,40 +210,61 @@ fun NavGraph(
                 petRepository = petRepository
             )
         }
-
-        composable(Screen.PetList.route) {
-            val viewModel: PetViewModel = hiltViewModel()
-            val state by viewModel.state.collectAsState()
-            PetListScreen(
-                state = state,
-                onEvent = viewModel::onEvent,
-                onNavigateToRegister = { navController.navigate(Screen.PetRegister.route) }
-            )
-        }
-
-        composable(
-            route = Screen.PetProfile.route,
-            arguments = listOf(navArgument("petId") { type = NavType.StringType })
-        ) {
-            // Placeholder: Para implementar esto se requiere un ViewModel que cargue Pet y Owner por ID.
-        }
-        
+        // --- PRODUCTOS (LISTA) ---
         composable(Screen.ProductList.route) {
             val viewModel: ProductViewModel = hiltViewModel()
             val state by viewModel.state.collectAsState()
             InventoryListScreen(
-                state = state, 
-                onEvent = viewModel::onEvent, 
-                onNavigateToForm = { navController.navigate("product_form") },
-                onNavigateToHome = { navController.navigate(Screen.Home.route) },
-                onNavigateToPets = { navController.navigate(Screen.PetList.route) },
-                onNavigateToAppointments = { navController.navigate(Screen.AppointmentList.route) },
-                onNavigateToPaymentList = { navController.navigate(Screen.PaymentList.route) }
+                state = state,
+                onEvent = { event ->
+                    when (event) {
+                        is com.example.pawcare.presentation.components.products.ProductUiEvent.OnEditProductClick -> {
+                            viewModel.onEvent(event)
+                            navController.navigate("product_form?productId=${event.product.id}")
+                        }
+                        else -> viewModel.onEvent(event)
+                    }
+                },
+                onNavigateToForm = {
+                    viewModel.onEvent(com.example.pawcare.presentation.components.products.ProductUiEvent.OnClearForm)
+                    navController.navigate("product_form")
+                },
+                onNavigateToCatalogue = {
+                    navController.navigate(Screen.ProductCatalogue.route)
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
-        composable("product_form") {
-            val viewModel: ProductViewModel = hiltViewModel()
+        // --- PRODUCTOS (CATÁLOGO PREVIEW) ---
+        composable(Screen.ProductCatalogue.route) {
+            val parentEntry = remember(it) {
+                navController.getBackStackEntry(Screen.ProductList.route)
+            }
+            val viewModel: ProductViewModel = hiltViewModel(parentEntry)
+            val state by viewModel.state.collectAsState()
+
+            ProductCatalogueScreen(
+                state = state,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // --- PRODUCTOS (FORMULARIO) ---
+        composable(
+            route = "product_form?productId={productId}",
+            arguments = listOf(
+                navArgument("productId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(Screen.ProductList.route)
+            }
+            val viewModel: ProductViewModel = hiltViewModel(parentEntry)
             val state by viewModel.state.collectAsState()
             ProductFormScreen(
                 state = state,
@@ -323,6 +375,7 @@ fun NavGraph(
                 paymentId = paymentId,
                 paymentRepository = paymentRepository,
                 onBack = { navController.popBackStack() },
+                isEdit = state.productId != null
                 onDeleteSuccess = { navController.popBackStack() }
             )
         }

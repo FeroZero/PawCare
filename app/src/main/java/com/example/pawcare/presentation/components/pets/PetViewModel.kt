@@ -19,6 +19,7 @@ class PetViewModel @Inject constructor(
     private val searchPetsUseCase: SearchPetsUseCase,
     private val createPetUseCase: CreatePetUseCase,
     private val updatePetUseCase: UpdatePetUseCase,
+    private val deletePetUseCase: DeletePetsUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PetUiState())
@@ -45,6 +46,9 @@ class PetViewModel @Inject constructor(
             PetUiEvent.OnSavePetClick -> savePet()
 
             is PetUiEvent.OnDeletePet -> {
+                viewModelScope.launch {
+                    deletePetUseCase(event.id)
+                }
             }
 
             is PetUiEvent.OnPetClick -> {

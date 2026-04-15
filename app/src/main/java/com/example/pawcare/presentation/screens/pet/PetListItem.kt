@@ -1,6 +1,7 @@
 package com.example.pawcare.presentation.screens.pet
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -21,23 +22,21 @@ fun PetListItem(
     onClick: () -> Unit = {}
 ) {
     PawCareCard(
-        modifier = Modifier.padding(horizontal = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar de la mascota (Círculo con borde Accent)
             Surface(
                 modifier = Modifier.size(50.dp),
                 shape = CircleShape,
-                color = Background, // Color de fondo suave --bg
-                border = BorderStroke(2.dp, Border) // Borde --border
+                color = Background,
+                border = BorderStroke(2.dp, Border)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    // Usamos icono Pets de Material Extended en lugar de emoji
                     Icon(
                         imageVector = Icons.Default.Pets,
                         contentDescription = null,
@@ -61,7 +60,6 @@ fun PetListItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MutedText
                 )
-                // Información del dueño (Screen 03 del HTML)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Dueño: ",

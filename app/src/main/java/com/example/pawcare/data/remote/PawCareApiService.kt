@@ -15,6 +15,12 @@ interface PawCareApiService {
     @GET("owners/{id}/pets")
     suspend fun getOwnerPets(@Path("id") id: String): Response<List<PetDto>>
 
+    @PUT("owners/{id}")
+    suspend fun updateOwner(
+        @Path("id") id: String,
+        @Body request: CreateOwnerRequest
+    ): Response<OwnerDto>
+
     @DELETE("owners/{id}")
     suspend fun deleteOwner(@Path("id") id: String): Response<Unit>
 

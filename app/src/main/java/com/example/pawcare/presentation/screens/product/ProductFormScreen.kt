@@ -60,7 +60,6 @@ fun ProductFormScreen(
             )
         }
 
-        // Icono decorativo de Inventario (Sustituye emoji)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -175,7 +174,8 @@ private fun ProductFormScreenPreview() {
                 stock = "10"
             ),
             onEvent = {},
-            onBack = {}
+            onBack = {},
+            isEdit = false
         )
     }
 }

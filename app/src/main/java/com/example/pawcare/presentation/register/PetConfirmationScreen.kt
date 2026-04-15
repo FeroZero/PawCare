@@ -31,7 +31,8 @@ fun PetConfirmationScreen(
     var pet by remember { mutableStateOf<Pet?>(null) }
 
     LaunchedEffect(petId) {
-        val result = petRepository.getPetById(petId).first()
+        val result = petRepository.getPetById(petId)
+
         if (result is Resource.Success) {
             pet = result.data
         }

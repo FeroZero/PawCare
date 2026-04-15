@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -16,18 +17,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.pawcare.domain.model.Pet
-import com.example.pawcare.presentation.screens.pet.PawCareCard
 import com.example.pawcare.presentation.components.pets.PetUiEvent
 import com.example.pawcare.presentation.components.pets.PetUiState
-import com.example.pawcare.presentation.screens.pet.PetListItem
 import com.example.pawcare.ui.theme.*
 
 @Composable
 fun PetListScreen(
     state: PetUiState,
     onEvent: (PetUiEvent) -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    onBack: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -39,24 +40,37 @@ fun PetListScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 56.dp, bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = TextPrimary
+                )
+            }
+
             Text(
                 text = "Mis Mascotas",
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary
+                color = TextPrimary,
+                modifier = Modifier.weight(1f)
             )
+
             IconButton(
                 onClick = onNavigateToRegister,
                 modifier = Modifier
                     .background(Accent, RoundedCornerShape(10.dp))
                     .size(36.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+                Icon(Icons.Default.Add, contentDescription = "Registrar", tint = Color.White)
             }
         }
 
+        // BUSCADOR
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = { onEvent(PetUiEvent.OnSearchQueryChange(it)) },
@@ -72,6 +86,7 @@ fun PetListScreen(
             )
         )
 
+        // ESTADÍSTICAS
         Row(
             modifier = Modifier.padding(vertical = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -88,6 +103,7 @@ fun PetListScreen(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
+        // LISTA
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             contentPadding = PaddingValues(bottom = 100.dp)
@@ -118,51 +134,18 @@ fun StatBox(value: String, label: String, color: Color, modifier: Modifier) {
 @Composable
 private fun PetListScreenPreview() {
     PawCareTheme {
-        val mockPets = listOf(
-            Pet(
-                id = "1",
-                name = "Rocky",
-                breed = "Golden Retriever",
-                age = 3,
-                photoUrl = null,
-                ownerId = "owner1",
-                ownerName = "Carlos Mendez",
-                createdAt = "2023-08-01"
-            ),
-            Pet(
-                id = "2",
-                name = "Luna",
-                breed = "Caniche",
-                age = 2,
-                photoUrl = null,
-                ownerId = "owner2",
-                ownerName = "lol Mendez",
-                createdAt = "2024-07-02"
-            ),
-            Pet(
-                id = "3",
-                name = "Coco",
-                breed = "Chihuahua",
-                age = 1,
-                photoUrl = null,
-                ownerId = "owner3",
-                ownerName = "Jose Jose",
-                createdAt = "2023-08-03"
-            )
-        )
-
         val state = PetUiState(
-            pets = mockPets,
-            totalRegistered = 12,
-            appointmentsToday = 5,
-            newPetsCount = 3,
+            pets = emptyList(),
+            totalRegistered = 0,
+            appointmentsToday = 0,
+            newPetsCount = 0,
             searchQuery = ""
         )
-
         PetListScreen(
             state = state,
             onEvent = {},
-            onNavigateToRegister = {}
+            onNavigateToRegister = {},
+            onBack = {}
         )
     }
 }

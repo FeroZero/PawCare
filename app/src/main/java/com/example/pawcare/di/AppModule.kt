@@ -29,8 +29,9 @@ object AppModule {
             context,
             PawCareDatabase::class.java,
             "pawcare_db"
+
         )
-        .fallbackToDestructiveMigration() // Evita el crash al subir de versión (1 a 2)
+        .fallbackToDestructiveMigration()
         .build()
     }
 
