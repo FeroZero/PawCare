@@ -9,7 +9,17 @@ interface SafeApiCall {
         return try {
             val response = apiCall()
             if (response.isSuccessful) {
-                Resource.Success(response.body()!!)
+                // Manejo especial para respuestas sin cuerpo (ej. DELETE o Unit)
+                val body = response.body()
+                if (body == null && response.code() == 204) {
+                    @Suppress("UNCHECKED_CAST")
+                    Resource.Success(Unit as T)
+                } else if (body != null) {
+                    Resource.Success(body)
+                } else {
+                    @Suppress("UNCHECKED_CAST")
+                    Resource.Success(Unit as T)
+                }
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Error desconocido"
                 Resource.Error(errorMsg)
