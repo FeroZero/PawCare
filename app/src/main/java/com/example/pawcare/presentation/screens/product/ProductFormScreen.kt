@@ -174,7 +174,8 @@ private fun ProductFormScreenPreview() {
                 stock = "10"
             ),
             onEvent = {},
-            onBack = {}
+            onBack = {},
+            isEdit = false
         )
     }
 }

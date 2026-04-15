@@ -315,11 +315,5 @@ fun PawBottomBar(
             selected = false,
             onClick = { }
         )
-        NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            label = { Text("Config") },
-            selected = false,
-            onClick = { }
-        )
     }
 }

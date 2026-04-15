@@ -155,7 +155,7 @@ fun PetProfileScreen(
         ) {
             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
             Spacer(Modifier.width(8.dp))
-            Text("Eliminar Registro Completo", color = Color.Red, fontWeight = FontWeight.Bold)
+            Text("Eliminar Registro", color = Color.Red, fontWeight = FontWeight.Bold)
         }
     }
 }

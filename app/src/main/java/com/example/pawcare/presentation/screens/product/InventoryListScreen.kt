@@ -6,9 +6,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -29,7 +31,9 @@ import com.example.pawcare.ui.theme.*
 fun InventoryListScreen(
     state: ProductUiState,
     onEvent: (ProductUiEvent) -> Unit,
-    onNavigateToForm: () -> Unit
+    onNavigateToForm: () -> Unit,
+    onNavigateToCatalogue: () -> Unit,
+    onBack: () -> Unit
 ) {
     var productToDelete by remember { mutableStateOf<Product?>(null) }
 
@@ -63,7 +67,6 @@ fun InventoryListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    onEvent(ProductUiEvent.OnClearForm) // Limpiamos el formulario para nuevo producto
                     onNavigateToForm()
                 },
                 containerColor = Accent,
@@ -80,11 +83,36 @@ fun InventoryListScreen(
                 .padding(padding)
                 .padding(horizontal = 20.dp)
         ) {
-            Text(
-                text = "Gestión de Inventario",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(top = 24.dp, bottom = 16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = TextPrimary)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Gestión de Inventario",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Botón de Catálogo Preview
+            Button(
+                onClick = onNavigateToCatalogue,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Accent.copy(alpha = 0.1f), contentColor = Accent),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Catálogo Preview", fontWeight = FontWeight.Bold)
+            }
 
             OutlinedTextField(
                 value = state.searchQuery,
@@ -106,7 +134,6 @@ fun InventoryListScreen(
                         product = product,
                         onEdit = {
                             onEvent(ProductUiEvent.OnEditProductClick(product))
-                            onNavigateToForm()
                         },
                         onDelete = {
                             productToDelete = product
@@ -178,7 +205,9 @@ private fun InventoryListScreenPreview() {
         InventoryListScreen(
             state = state,
             onEvent = {},
-            onNavigateToForm = {}
+            onNavigateToForm = {},
+            onNavigateToCatalogue = {},
+            onBack = {}
         )
     }
 }

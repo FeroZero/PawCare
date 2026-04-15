@@ -42,28 +42,24 @@ class PetRegisterViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(petId = id, isLoading = true) }
 
-            // 1. Buscamos la mascota en el repositorio
             val petResult = petRepository.getPetById(id)
 
             if (petResult is Resource.Success) {
                 val pet = petResult.data ?: return@launch
 
-                // ACTUALIZACIÓN INICIAL: Guardamos los datos del perro y el ID del dueño
                 _state.update { it.copy(
                     petId = pet.id,
-                    ownerId = pet.ownerId, // <--- ESTO ES LO QUE TE FALTABA
+                    ownerId = pet.ownerId,
                     name = pet.name,
                     breed = pet.breed,
                     age = pet.age.toString()
                 ) }
 
-                // 2. Buscamos al dueño usando el ID que acabamos de obtener del perro
                 val ownerResult = ownerRepository.getOwnerById(pet.ownerId)
 
                 if (ownerResult is Resource.Success) {
                     val owner = ownerResult.data ?: return@launch
 
-                    // ACTUALIZACIÓN FINAL: Guardamos los datos del contacto
                     _state.update { it.copy(
                         isLoading = false,
                         ownerFullName = owner.fullName,
@@ -100,7 +96,6 @@ class PetRegisterViewModel @Inject constructor(
             val currentState = _state.value
             val petIdFromNav: String? = savedStateHandle["petId"]
 
-            // Validaciones básicas
             val ageInt = currentState.age.toIntOrNull() ?: 0
             if (ageInt <= 0 || currentState.name.isBlank()) {
                 _state.update { it.copy(error = "Por favor completa los datos correctamente") }
@@ -110,12 +105,10 @@ class PetRegisterViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
 
             if (petIdFromNav != null) {
-                // --- MODO EDICIÓN ---
                 val petResult = petRepository.getPetById(petIdFromNav)
                 if (petResult is Resource.Success) {
                     val currentPet = petResult.data!!
 
-                    // 1. Actualizamos el dueño primero
                     val updateOwnerResult = ownerRepository.updateOwner(
                         id = currentPet.ownerId,
                         fullName = currentState.ownerFullName,
@@ -126,7 +119,6 @@ class PetRegisterViewModel @Inject constructor(
                     )
 
                     if (updateOwnerResult is Resource.Success) {
-                        // 2. Actualizamos la mascota
                         val updatePetResult = petRepository.updatePet(
                             id = petIdFromNav,
                             name = currentState.name,
@@ -136,7 +128,7 @@ class PetRegisterViewModel @Inject constructor(
                             ownerId = currentPet.ownerId
                         )
                         handleResult(updatePetResult)
-                    } else if (updateOwnerResult is Resource.Error) { // CAMBIA EL 'else' POR ESTO
+                    } else if (updateOwnerResult is Resource.Error) {
                         _state.update { it.copy(isLoading = false, error = updateOwnerResult.message) }
                     }
                 }

@@ -26,6 +26,7 @@ import com.example.pawcare.presentation.components.pets.PetUiEvent
 import com.example.pawcare.presentation.components.products.ProductViewModel
 import com.example.pawcare.presentation.register.PetRegisterScreen
 import com.example.pawcare.presentation.screens.product.InventoryListScreen
+import com.example.pawcare.presentation.screens.product.ProductCatalogueScreen
 import com.example.pawcare.presentation.screens.product.ProductFormScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -86,9 +87,9 @@ fun NavGraph(
         composable(
             route = Screen.PetProfile.route,
             arguments = listOf(navArgument("petId") { type = NavType.StringType })
-        ) { backStackEntry ->            val petId = backStackEntry.arguments?.getString("petId") ?: ""
+        ) { backStackEntry ->
+            val petId = backStackEntry.arguments?.getString("petId") ?: ""
 
-            // AGREGAR ESTA LÍNEA AQUÍ:
             val scope = androidx.compose.runtime.rememberCoroutineScope()
 
             val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.PetList.route) }
@@ -177,30 +178,69 @@ fun NavGraph(
                 petRepository = petRepository
             )
         }
-
-        // --- PRODUCTOS ---
+        // --- PRODUCTOS (LISTA) ---
         composable(Screen.ProductList.route) {
             val viewModel: ProductViewModel = hiltViewModel()
             val state by viewModel.state.collectAsState()
 
             InventoryListScreen(
                 state = state,
-                onEvent = viewModel::onEvent,
+                onEvent = { event ->
+                    when (event) {
+                        is com.example.pawcare.presentation.components.products.ProductUiEvent.OnEditProductClick -> {
+                            viewModel.onEvent(event)
+                            navController.navigate("product_form?productId=${event.product.id}")
+                        }
+                        else -> viewModel.onEvent(event)
+                    }
+                },
                 onNavigateToForm = {
+                    viewModel.onEvent(com.example.pawcare.presentation.components.products.ProductUiEvent.OnClearForm)
                     navController.navigate("product_form")
-                }
+                },
+                onNavigateToCatalogue = {
+                    navController.navigate(Screen.ProductCatalogue.route)
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
-        composable("product_form") {
-            val viewModel: ProductViewModel = hiltViewModel()
+        // --- PRODUCTOS (CATÁLOGO PREVIEW) ---
+        composable(Screen.ProductCatalogue.route) {
+            val parentEntry = remember(it) {
+                navController.getBackStackEntry(Screen.ProductList.route)
+            }
+            val viewModel: ProductViewModel = hiltViewModel(parentEntry)
+            val state by viewModel.state.collectAsState()
+
+            ProductCatalogueScreen(
+                state = state,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // --- PRODUCTOS (FORMULARIO) ---
+        composable(
+            route = "product_form?productId={productId}",
+            arguments = listOf(
+                navArgument("productId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(Screen.ProductList.route)
+            }
+            val viewModel: ProductViewModel = hiltViewModel(parentEntry)
             val state by viewModel.state.collectAsState()
 
             ProductFormScreen(
                 state = state,
                 onEvent = viewModel::onEvent,
                 onBack = { navController.popBackStack() },
-                isEdit = state.name.isNotEmpty()
+                isEdit = state.productId != null
             )
         }
     }
