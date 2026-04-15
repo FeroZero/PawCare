@@ -1,6 +1,5 @@
 package com.example.pawcare.presentation.components.appointments
 
-import androidx.activity.result.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pawcare.domain.use_case.appointments.DeleteAppointmentUseCase
@@ -49,6 +48,11 @@ class AppointmentViewModel @Inject constructor(
             is AppointmentUiEvent.OnStatusChange -> {
                 updateStatus(event.id, event.newStatus)
             }
+            
+            is AppointmentUiEvent.OnFilterChanged -> {
+                _state.update { it.copy(selectedFilter = event.filter) }
+                applyFilter()
+            }
         }
     }
 
@@ -56,11 +60,18 @@ class AppointmentViewModel @Inject constructor(
         getAppointmentsUseCase(date = date).onEach { result ->
             _state.update { currentState ->
                 when (result) {
-                    is Resource.Success -> currentState.copy(
-                        appointments = result.data,
-                        isLoading = false,
-                        error = null
-                    )
+                    is Resource.Success -> {
+                        val appointments = result.data.sortedByDescending { it.date }
+                        currentState.copy(
+                            appointments = appointments,
+                            isLoading = false,
+                            error = null,
+                            todayAppointmentsCount = appointments.size,
+                            pendingCount = appointments.count { it.status.lowercase() == "pending" },
+                            completedCount = appointments.count { it.status.lowercase() == "completed" },
+                            cancelledCount = appointments.count { it.status.lowercase() == "cancelled" }
+                        ).also { applyFilter() }
+                    }
                     is Resource.Error -> currentState.copy(
                         appointments = result.data ?: currentState.appointments,
                         isLoading = false,
@@ -72,17 +83,30 @@ class AppointmentViewModel @Inject constructor(
                     )
                 }
             }
+            applyFilter()
         }.launchIn(viewModelScope)
+    }
+
+    private fun applyFilter() {
+        _state.update { currentState ->
+            val filtered = when (currentState.selectedFilter) {
+                AppointmentFilter.ALL -> currentState.appointments
+                AppointmentFilter.PENDING -> currentState.appointments.filter { it.status.lowercase() == "pending" }
+                AppointmentFilter.COMPLETED -> currentState.appointments.filter { it.status.lowercase() == "completed" }
+                AppointmentFilter.CANCELLED -> currentState.appointments.filter { it.status.lowercase() == "cancelled" }
+            }
+            currentState.copy(filteredAppointments = filtered)
+        }
     }
 
     private fun updateStatus(id: String, status: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) } // Opcional: mostrar carga durante la actualización
+            _state.update { it.copy(isLoading = true) }
             val result = updateAppointmentStatusUseCase(id, status, null)
             if (result is Resource.Error) {
                 _state.update { it.copy(error = result.message, isLoading = false) }
             } else {
-                _state.update { it.copy(isLoading = false, error = null) }
+                loadAppointments(_state.value.selectedDate)
             }
         }
     }
@@ -94,7 +118,7 @@ class AppointmentViewModel @Inject constructor(
             if (result is Resource.Error) {
                 _state.update { it.copy(error = result.message, isLoading = false) }
             } else {
-                _state.update { it.copy(isLoading = false, error = null) }
+                loadAppointments(_state.value.selectedDate)
             }
         }
     }
