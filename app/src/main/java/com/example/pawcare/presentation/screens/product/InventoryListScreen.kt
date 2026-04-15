@@ -34,7 +34,7 @@ fun InventoryListScreen(
     onEvent: (ProductUiEvent) -> Unit,
     onNavigateToForm: () -> Unit,
     onNavigateToCatalogue: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToPets: () -> Unit,
     onNavigateToAppointments: () -> Unit,
@@ -222,7 +222,11 @@ private fun InventoryListScreenPreview() {
             onEvent = {},
             onNavigateToForm = {},
             onNavigateToCatalogue = {},
-            onBack = {}
+            onBack = {},
+            onNavigateToHome = {},
+            onNavigateToPets = {},
+            onNavigateToAppointments = {},
+            onNavigateToPaymentList = {}
         )
     }
 }

@@ -54,8 +54,7 @@ fun Appointment.toEntity(): AppointmentEntity {
 
 fun AppointmentEntity.toAppointment(): Appointment {
     return Appointment(
-        id = id,
-        date = date,
+        id = id,date = date,
         timeSlot = timeSlot,
         status = status,
         totalPrice = totalPrice,
@@ -64,6 +63,14 @@ fun AppointmentEntity.toAppointment(): Appointment {
         petId = petId,
         petName = petName,
         petPhotoUrl = petPhotoUrl,
-        services = emptyList() 
+        services = serviceIds.split(",").filter { it.isNotBlank() }.map { id ->
+            com.example.pawcare.domain.model.Service(
+                id = id,
+                name = "Servicio",
+                description = "",
+                price = 0.0,
+                durationMinutes = 0
+            )
+        }
     )
 }
